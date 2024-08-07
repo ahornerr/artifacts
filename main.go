@@ -7,6 +7,7 @@ import (
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/client"
 	"github.com/ahornerr/artifacts/command"
+	"github.com/ahornerr/artifacts/commands"
 	"github.com/ahornerr/artifacts/stopper"
 	"log"
 	"os"
@@ -47,16 +48,16 @@ func main() {
 	}
 
 	characterCommands := map[string]command.Command{
-		"curlyBoy": command.NewCraftingLoop("iron", stopper.StopNever{}),
+		"curlyBoy": commands.NewCraftingLoop("iron", stopper.StopNever{}),
 		//"curlyBoy2": command.NewCraftingLoop("iron", stopper.StopNever{}),
 		//"curlyBoy3": command.NewCraftingLoop("iron", stopper.StopNever{}),
 		//"curlyBoy4": command.NewCraftingLoop("iron", stopper.StopNever{}),
 		//"curlyBoy5": command.NewCraftingLoop("iron", stopper.StopNever{}),
 		//"curlyBoy":  command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy2": command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy3": command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy4": command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy5": command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
+		"curlyBoy2": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
+		"curlyBoy3": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
+		"curlyBoy4": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
+		"curlyBoy5": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
 	}
 
 	characters := map[string]*character.Character{}

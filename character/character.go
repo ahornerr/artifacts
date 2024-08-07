@@ -147,14 +147,6 @@ func (c *Character) MaxInventoryItems() int {
 	return c.character.InventoryMaxItems
 }
 
-func (c *Character) InventoryAsMap() map[string]int {
-	itemsMap := map[string]int{}
-	for _, item := range *c.character.Inventory {
-		itemsMap[item.Code] += item.Quantity
-	}
-	return itemsMap
-}
-
 func (c *Character) Bank() map[string]int {
 	return c.bank.Items
 }

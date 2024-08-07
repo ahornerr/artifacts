@@ -8,16 +8,24 @@ import (
 )
 
 type Loop struct {
-	sequence   []Command
-	stop       stopper.Stopper
-	iterations int
+	sequence        []Command
+	descriptionFunc func(iteration int) string
+	stop            stopper.Stopper
+	iterations      int
 }
 
-func NewLoop(stop stopper.Stopper, sequence ...Command) *Loop {
-	return &Loop{sequence: sequence, stop: stop}
+func NewLoop(stop stopper.Stopper, descriptionFunc func(iteration int) string, sequence ...Command) *Loop {
+	return &Loop{
+		sequence:        sequence,
+		descriptionFunc: descriptionFunc,
+		stop:            stop,
+	}
 }
 
 func (c *Loop) Description() string {
+	if c.descriptionFunc != nil {
+		return c.descriptionFunc(c.iterations)
+	}
 	return fmt.Sprintf("Loop #%d", c.iterations)
 }
 
