@@ -1,81 +1,99 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/ahornerr/artifacts/character"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
+	"log"
+	"time"
 )
 
-type rawHttpError struct {
-	Error struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error"`
+type Event struct {
+	Character *character.Character
+	Bank      map[string]int
 }
 
-type HTTPError struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-	Body    string
-}
+func httpServer(events <-chan Event, onNewClient func()) *fiber.App {
+	app := fiber.New()
 
-func NewHTTPError(statusCode int, body []byte) HTTPError {
-	var httpError HTTPError
+	newClient := make(chan chan []byte)
+	deleteClient := make(chan chan []byte)
 
-	var raw rawHttpError
-	err := json.Unmarshal(body, &raw)
-	if err != nil {
-		switch statusCode {
-		case 502:
-			httpError.Body = "502 Bad Gateway"
-		default:
-			httpError.Body = string(body)
+	clients := map[chan []byte]bool{}
+	go func() {
+		for {
+			select {
+			case c := <-newClient:
+				clients[c] = true
+			case c := <-deleteClient:
+				delete(clients, c)
+			case ev := <-events:
+				if len(clients) == 0 {
+					continue
+				}
+
+				message, err := json.Marshal(ev)
+				if err != nil {
+					log.Println("Error marshalling event:", err)
+				}
+				//lastMessage = message
+				for client := range clients {
+					// Non-blocking write in case something goes wrong
+					select {
+					case client <- message:
+						//log.Println("Wrote to client channel successfully")
+					case <-time.After(200 * time.Millisecond):
+						log.Println("Timeout writing to client channel")
+					}
+				}
+			}
 		}
-		httpError.Message = err.Error()
-	} else {
-		httpError.Body = string(body)
-		httpError.Code = raw.Error.Code
-		httpError.Message = raw.Error.Message
-	}
+	}()
 
-	return httpError
-}
+	app.Get("/events", func(c fiber.Ctx) error {
+		c.Set("Content-Type", "text/event-stream")
+		c.Set("Cache-Control", "no-transform")
+		c.Set("Connection", "keep-alive")
+		c.Set("Transfer-Encoding", "chunked")
+		c.Set("Access-Control-Allow-Origin", "*")
 
-func (e HTTPError) Error() string {
-	return fmt.Sprintf("[%d] %s - %s", e.Code, e.Message, e.Body)
-}
+		c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+			clientChan := make(chan []byte)
 
-func errIsInventoryFull(err error) bool {
-	var httpError HTTPError
-	if !errors.As(err, &httpError) {
-		return false
-	}
+			defer func() {
+				deleteClient <- clientChan
+			}()
 
-	return httpError.Code == 497
-}
+			newClient <- clientChan
 
-func errIsBankItemNotFound(err error) bool {
-	var httpError HTTPError
-	if !errors.As(err, &httpError) {
-		return false
-	}
+			go func() {
+				onNewClient()
+			}()
 
-	if httpError.Code != 404 {
-		return false
-	}
+			for {
+				select {
+				case message := <-clientChan:
+					_, err := fmt.Fprintf(w, "data: %v\n\n", string(message))
+					if err != nil {
+						log.Println("Error writing to client:", err)
+						return
+					}
 
-	return httpError.Message == "Item not found."
-}
+					err = w.Flush()
+					if err != nil {
+						return
+					}
+				}
+			}
+		})
 
-func errIsBankInsufficientQuantity(err error) bool {
-	var httpError HTTPError
-	if !errors.As(err, &httpError) {
-		return false
-	}
+		return nil
+	})
 
-	if httpError.Code != 478 {
-		return false
-	}
+	app.Get("/*", static.New("./frontend/build"))
 
-	return httpError.Message == "Missing item or insufficient quantity in your inventory."
+	return app
 }

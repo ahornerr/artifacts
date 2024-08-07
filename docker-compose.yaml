@@ -1,0 +1,10 @@
+services:
+  cutscene:
+    image: docker.horner.codes/artifacts/artifacts:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+    environment:
+      ARTIFACTS_TOKEN: xxxxxxxx
+    ports:
+      - 8080:8080
