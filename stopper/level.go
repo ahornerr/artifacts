@@ -5,7 +5,7 @@ import (
 	"github.com/ahornerr/artifacts/character"
 )
 
-func StopAtLevel(skill string, level int) Stopper {
+func AtLevel(skill string, level int) Stopper {
 	return stopAtLevel{skill: skill, desiredLevel: level}
 }
 

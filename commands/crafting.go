@@ -33,7 +33,7 @@ func NewCraftingLoop(itemCode string, stop stopper.Stopper) command.Command {
 		},
 		BankForCrafting(item),
 		MoveToClosestWorkshop(item),
-		CraftOne(item),
+		Craft(item, 1),
 	)
 }
 
@@ -110,11 +110,11 @@ func MoveToClosestWorkshop(item *game.Item) command.Command {
 	)
 }
 
-func CraftOne(item *game.Item) command.Command {
+func Craft(item *game.Item, quantity int) command.Command {
 	return command.NewSimple(
-		fmt.Sprintf("Crafting %s", item.Name),
+		fmt.Sprintf("Crafting %d %s", quantity, item.Name),
 		func(ctx context.Context, char *character.Character) error {
-			_, err := char.Craft(ctx, item.Code, 1)
+			_, err := char.Craft(ctx, item.Code, quantity)
 			return err
 		},
 	)

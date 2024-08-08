@@ -47,17 +47,33 @@ func main() {
 		log.Fatalf("loading bank items: %s", err)
 	}
 
+	sequenceGetItem := func(itemCode string, quantity int) command.Command {
+		return command.Sequence(
+			commands.SequenceMoveToBankAndDepositAll,
+			commands.GetItem(itemCode, quantity),
+			commands.SequenceMoveToBankAndDepositAll,
+		)
+	}
+
+	mainSequence := func() command.Command {
+		return command.Sequence(
+			commands.NewHarvestLoop("ash_tree", stopper.AtQuantity(500)),
+			commands.NewCraftingLoop("hardwood_plank", stopper.AtLevel("woodcutting", 25)),
+
+			// Will stop when all spruce logs are crafted into planks
+			//commands.NewCraftingLoop("spruce_plank", stopper.AtLevel("woodcutting", 20)),
+			//commands.NewHarvestLoop("spruce_tree", stopper.AtLevel("woodcutting", 20)),
+			//commands.NewCraftingLoop("spruce_plank", stopper.AtLevel("woodcutting", 20)),
+			//commands.NewHarvestLoop("birch_tree", stopper.Never{}),
+		)
+	}
+
 	characterCommands := map[string]command.Command{
-		"curlyBoy": commands.NewCraftingLoop("iron", stopper.StopNever{}),
-		//"curlyBoy2": command.NewCraftingLoop("iron", stopper.StopNever{}),
-		//"curlyBoy3": command.NewCraftingLoop("iron", stopper.StopNever{}),
-		//"curlyBoy4": command.NewCraftingLoop("iron", stopper.StopNever{}),
-		//"curlyBoy5": command.NewCraftingLoop("iron", stopper.StopNever{}),
-		//"curlyBoy":  command.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy2": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy3": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy4": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
-		"curlyBoy5": commands.NewHarvestLoop("iron_rocks", stopper.StopNever{}),
+		"curlyBoy":  sequenceGetItem("skull_staff", 1),
+		"curlyBoy2": mainSequence(),
+		"curlyBoy3": mainSequence(),
+		"curlyBoy4": mainSequence(),
+		"curlyBoy5": mainSequence(),
 	}
 
 	characters := map[string]*character.Character{}

@@ -27,6 +27,10 @@ func (r *resources) Get(resourceCode string) client.ResourceSchema {
 	return r.resources[resourceCode]
 }
 
+func (r *resources) Drops(itemCode string) []client.ResourceSchema {
+	return r.drops[itemCode]
+}
+
 func (r *resources) load(ctx context.Context) error {
 	page := 1
 	size := 100

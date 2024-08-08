@@ -80,6 +80,8 @@ func GetAndEquipUpgrades(stats game.Stats) command.Command {
 
 				sequence = append(sequence, slotSequence...)
 			}
+
+			sequence = append(sequence, DepositAll)
 		}
 		return sequence
 	})

@@ -409,7 +409,11 @@ func (c *Character) ClosestOf(locations []game.Location) game.Location {
 	closestLocation := locations[0]
 	var closestDistance float64
 	for _, location := range locations {
-		distance := math.Sqrt(math.Pow(float64(location.X-currentX), 2) + math.Pow(float64(location.Y-currentY), 2))
+		// Euclidean
+		//distance := math.Sqrt(math.Pow(float64(location.X-currentX), 2) + math.Pow(float64(location.Y-currentY), 2))
+
+		// Manhattan
+		distance := math.Abs(float64(location.X-currentX)) + math.Abs(float64(location.Y-currentY))
 		if distance < closestDistance {
 			closestLocation = location
 			closestDistance = distance

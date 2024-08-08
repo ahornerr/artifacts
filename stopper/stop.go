@@ -11,9 +11,9 @@ type Stopper interface {
 	ShouldStop(ctx context.Context, char *character.Character, quantity int) (bool, error)
 }
 
-type StopNever struct{}
+type Never struct{}
 
-func (s StopNever) ShouldStop(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+func (s Never) ShouldStop(ctx context.Context, char *character.Character, quantity int) (bool, error) {
 	return false, nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"github.com/ahornerr/artifacts/character"
 )
 
-func StopAtQuantity(quantity int) Stopper {
+func AtQuantity(quantity int) Stopper {
 	return stopAtQuantity{desiredQuantity: quantity}
 }
 
