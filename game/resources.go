@@ -8,35 +8,32 @@ import (
 
 type resources struct {
 	client    *client.ClientWithResponses
-	resources map[string]client.ResourceSchema
-	drops     map[string][]client.ResourceSchema
+	resources map[string]*Resource
+	drops     map[*Item][]*Resource
 }
-
-// TODO: It might be about time to create a Resource type...
-//  Similar to how crafting works
 
 func newResources(c *client.ClientWithResponses) *resources {
 	return &resources{
 		client:    c,
-		resources: map[string]client.ResourceSchema{},
-		drops:     map[string][]client.ResourceSchema{},
+		resources: map[string]*Resource{},
+		drops:     map[*Item][]*Resource{},
 	}
 }
 
-func (r *resources) Get(resourceCode string) client.ResourceSchema {
+func (r *resources) Get(resourceCode string) *Resource {
 	return r.resources[resourceCode]
 }
 
-func (r *resources) Drops(itemCode string) []client.ResourceSchema {
-	return r.drops[itemCode]
+func (r *resources) ResourcesForItem(item *Item) []*Resource {
+	return r.drops[item]
 }
 
 func (r *resources) load(ctx context.Context) error {
 	page := 1
 	size := 100
 
-	r.resources = map[string]client.ResourceSchema{}
-	r.drops = map[string][]client.ResourceSchema{}
+	r.resources = map[string]*Resource{}
+	r.drops = map[*Item][]*Resource{}
 
 	for {
 		resp, err := r.client.GetAllResourcesResourcesGetWithResponse(ctx, &client.GetAllResourcesResourcesGetParams{
@@ -49,17 +46,32 @@ func (r *resources) load(ctx context.Context) error {
 			return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 		}
 
-		for _, resource := range resp.JSON200.Data {
-			r.resources[resource.Code] = resource
+		for _, resourceSchema := range resp.JSON200.Data {
+			resource := &Resource{
+				Code:  resourceSchema.Code,
+				Name:  resourceSchema.Name,
+				Skill: string(resourceSchema.Skill),
+				Level: resourceSchema.Level,
+			}
 
-			for _, d := range resource.Drops {
-				itemCode := d.Code
-				if _, ok := r.drops[itemCode]; !ok {
-					r.drops[itemCode] = []client.ResourceSchema{}
+			for _, drop := range resourceSchema.Drops {
+				item := Items.Get(drop.Code)
+
+				resource.Loot = append(resource.Loot, Drop{
+					Item:        item,
+					MaxQuantity: drop.MaxQuantity,
+					MinQuantity: drop.MinQuantity,
+					Rate:        drop.Rate,
+				})
+
+				if _, ok := r.drops[item]; !ok {
+					r.drops[item] = []*Resource{}
 				}
 
-				r.drops[itemCode] = append(r.drops[itemCode], resource)
+				r.drops[item] = append(r.drops[item], resource)
 			}
+
+			r.resources[resource.Code] = resource
 		}
 
 		if len(resp.JSON200.Data) < size {

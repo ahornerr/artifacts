@@ -58,12 +58,11 @@ func (c *Character) Action(actions []string) {
 }
 
 func (c *Character) update(new client.CharacterSchema) {
-	cooldown, err := new.CooldownExpiration.AsCharacterSchemaCooldownExpiration0()
-	if err != nil {
-		// TODO: Log this?
-		c.CooldownExpires = time.Now().Add(time.Duration(new.Cooldown) * time.Second)
+	cooldown := new.CooldownExpiration
+	if cooldown == nil {
+		c.CooldownExpires = time.Time{}
 	} else {
-		c.CooldownExpires = cooldown
+		c.CooldownExpires = *cooldown
 	}
 
 	c.CooldownDuration = new.Cooldown

@@ -1,13 +1,17 @@
 package game
 
 import (
-	"github.com/promiseofcake/artifactsmmo-go-client/client"
 	"slices"
 )
 
 type Monster struct {
-	client.MonsterSchema
-	Stats Stats
+	Code    string
+	Name    string
+	Stats   Stats
+	Level   int
+	MaxGold int
+	MinGold int
+	Loot    []Drop
 }
 
 func (m Monster) GetWeaknesses() []string {

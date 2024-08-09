@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 )
 
@@ -16,7 +15,7 @@ type Crafting struct {
 	Level int
 
 	// Items List of items required to craft the item
-	Items map[*Item]int
+	Items map[*Item]int `json:"-"`
 }
 
 func (c Crafting) InventoryRequired() int {
@@ -37,35 +36,16 @@ func craftingFromSchema(itemSchemaCraft *client.ItemSchema_Craft) (*Crafting, er
 		return nil, err
 	}
 
-	skill, err := craft.Skill.AsCraftSchemaSkill0()
-	if err != nil {
-		return nil, err
-	}
-
-	craftQuantity, err := craft.Quantity.AsCraftSchemaQuantity0()
-	if err != nil {
-		return nil, err
-	}
-
-	craftLevel, err := craft.Level.AsCraftSchemaLevel0()
-	if err != nil {
-		return nil, err
-	}
-
-	if craftQuantity > 1 {
-		fmt.Println("This makes more than one item")
-	}
-
-	items := map[*Item]int{}
+	craftingItems := map[*Item]int{}
 	for _, cr := range *craft.Items {
-		// This is kind of hacky but we're going to replace the keys with actual item references later
-		items[&Item{Code: cr.Code}] = cr.Quantity
+		// This is kind of hacky, but we're going to replace the keys with actual item references later
+		craftingItems[&Item{Code: cr.Code}] = cr.Quantity
 	}
 
 	return &Crafting{
-		Skill:    string(skill),
-		Quantity: craftQuantity,
-		Level:    craftLevel,
-		Items:    items,
+		Skill:    string(*craft.Skill),
+		Quantity: *craft.Quantity,
+		Level:    *craft.Level,
+		Items:    craftingItems,
 	}, nil
 }

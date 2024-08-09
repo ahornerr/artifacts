@@ -9,17 +9,23 @@ import (
 type monsters struct {
 	client   *client.ClientWithResponses
 	monsters map[string]*Monster
+	drops    map[*Item][]*Monster
 }
 
 func newMonsters(c *client.ClientWithResponses) *monsters {
 	return &monsters{
 		client:   c,
 		monsters: map[string]*Monster{},
+		drops:    map[*Item][]*Monster{},
 	}
 }
 
 func (m *monsters) Get(monsterCode string) *Monster {
 	return m.monsters[monsterCode]
+}
+
+func (m *monsters) MonstersForItem(item *Item) []*Monster {
+	return m.drops[item]
 }
 
 func (m *monsters) load(ctx context.Context) error {
@@ -39,11 +45,34 @@ func (m *monsters) load(ctx context.Context) error {
 			return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 		}
 
-		for _, monster := range resp.JSON200.Data {
-			m.monsters[monster.Code] = &Monster{
-				MonsterSchema: monster,
-				Stats:         StatsFromMonster(monster),
+		for _, monsterSchema := range resp.JSON200.Data {
+			monster := &Monster{
+				Code:    monsterSchema.Code,
+				Name:    monsterSchema.Name,
+				Stats:   StatsFromMonster(monsterSchema),
+				Level:   monsterSchema.Level,
+				MaxGold: monsterSchema.MaxGold,
+				MinGold: monsterSchema.MinGold,
 			}
+
+			for _, drop := range monsterSchema.Drops {
+				item := Items.Get(drop.Code)
+
+				monster.Loot = append(monster.Loot, Drop{
+					Item:        item,
+					MaxQuantity: drop.MaxQuantity,
+					MinQuantity: drop.MinQuantity,
+					Rate:        drop.Rate,
+				})
+
+				if _, ok := m.drops[item]; !ok {
+					m.drops[item] = []*Monster{}
+				}
+
+				m.drops[item] = append(m.drops[item], monster)
+			}
+
+			m.monsters[monsterSchema.Code] = monster
 		}
 
 		if len(resp.JSON200.Data) < size {

@@ -65,11 +65,12 @@ func (i *items) load(ctx context.Context) error {
 			}
 
 			i.items[itemSchema.Code] = &Item{
-				Code:  itemSchema.Code,
-				Name:  itemSchema.Name,
-				Type:  itemSchema.Type,
-				Level: itemSchema.Level,
-				//DropsFrom: g.Drops[itemSchema.Code], // TODO: Best way to populate this?
+				Code:    itemSchema.Code,
+				Name:    itemSchema.Name,
+				Type:    itemSchema.Type,
+				SubType: itemSchema.Subtype,
+				Level:   itemSchema.Level,
+				//DropsFrom: g.ResourcesForItem[itemSchema.Code], // TODO: Best way to populate this?
 				Effects:  itemSchema.Effects,
 				Stats:    StatsFromItem(itemSchema),
 				Crafting: crafting,

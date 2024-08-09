@@ -7,7 +7,6 @@ import (
 	"github.com/ahornerr/artifacts/command"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/ahornerr/artifacts/stopper"
-	"github.com/promiseofcake/artifactsmmo-go-client/client"
 )
 
 func NewHarvestLoop(resourceCode string, stop stopper.Stopper) command.Command {
@@ -25,7 +24,7 @@ func NewHarvestLoop(resourceCode string, stop stopper.Stopper) command.Command {
 	)
 }
 
-func MoveToClosestResource(resource client.ResourceSchema) command.Command {
+func MoveToClosestResource(resource *game.Resource) command.Command {
 	return command.NewSimple(
 		fmt.Sprintf("Moving to closest %s", resource.Name),
 		func(ctx context.Context, char *character.Character) error {
@@ -38,7 +37,7 @@ func MoveToClosestResource(resource client.ResourceSchema) command.Command {
 	)
 }
 
-func Harvest(resource client.ResourceSchema) command.Command {
+func Harvest(resource *game.Resource) command.Command {
 	return command.NewSimple(
 		fmt.Sprintf("Harvesting %s", resource.Name),
 		func(ctx context.Context, char *character.Character) error {

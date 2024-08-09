@@ -12,7 +12,10 @@ type Item struct {
 	Name string
 
 	// Type Item type. In the case of armor, it will be the name of the slot e.g. "boots"
+	// In the case of jasper_crystal, it's "resource" with a subtype "task
 	Type string
+
+	SubType string
 
 	// Level Item level.
 	Level int

@@ -19,6 +19,9 @@ func New(token string) (*client.ClientWithResponses, error) {
 		}
 
 		switch resp.StatusCode {
+		case 461:
+			// A transaction is already in progress with this item/your golds in your bank.
+			return true, nil
 		case 486:
 			// character is locked. Action is already in progress
 			return true, nil

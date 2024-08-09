@@ -21,7 +21,7 @@ func EquipBestEquipmentForMonster(monster *game.Monster) command.Command {
 	return command.Sequence(GetAndEquipUpgrades(monster.Stats))
 }
 
-func EquipBestEquipmentForResource(resource client.ResourceSchema) command.Command {
+func EquipBestEquipmentForResource(resource *game.Resource) command.Command {
 	skillStats := game.Stats{
 		Attack: nil,
 		Resistance: map[string]int{

@@ -17,10 +17,10 @@ package main
 
 //	if fight.Result == client.Lose {
 //		r.reportAction("Fight lost!")
-//	} else if len(fight.Drops) > 0 && fight.Gold > 0 {
-//		r.reportAction("%s dropped %v and %d gold", monsterName, fight.Drops, fight.Gold)
-//	} else if len(fight.Drops) > 0 {
-//		r.reportAction("%s dropped %v", monsterName, fight.Drops)
+//	} else if len(fight.ResourcesForItem) > 0 && fight.Gold > 0 {
+//		r.reportAction("%s dropped %v and %d gold", monsterName, fight.ResourcesForItem, fight.Gold)
+//	} else if len(fight.ResourcesForItem) > 0 {
+//		r.reportAction("%s dropped %v", monsterName, fight.ResourcesForItem)
 //	} else if fight.Gold > 0 {
 //		r.reportAction("%s dropped %d gold", monsterName, fight.Gold)
 //	}

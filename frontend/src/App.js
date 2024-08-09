@@ -235,7 +235,7 @@ function ItemMap({items}) {
       <Grid item xs="auto" key={itemCode}>
         <Tooltip title={itemCode}>
           <Paper sx={{p: 1, pr: 2, pt: 1.5}} elevation={4}>
-            <Badge badgeContent={items[itemCode]} max={9999} color="primary" overlap="circular">
+            <Badge badgeContent={items[itemCode]} max={999999} color="primary" overlap="circular">
               <Avatar src={`https://artifactsmmo.com/images/items/${itemCode}.png`} variant="rounded"/>
             </Badge>
           </Paper>
