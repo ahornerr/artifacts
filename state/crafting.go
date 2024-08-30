@@ -30,6 +30,12 @@ func Craft(itemCode string, stop func(*character.Character, *CraftingArgs) bool)
 func CraftingLoop(ctx context.Context, char *character.Character, args *CraftingArgs) (State[*CraftingArgs], error) {
 	// Check stop condition
 	if args.stop(char, args) {
+		if len(char.Inventory) > 0 {
+			err := MoveToBankAndDepositAll(ctx, char)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return nil, nil
 	}
 

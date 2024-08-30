@@ -7,41 +7,75 @@ import (
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 )
 
-func EquipBestEquipment(ctx context.Context, char *character.Character, stats *game.Stats) error {
-	upgrades := char.GetEquipmentUpgradesInBank(stats)
-	if len(upgrades) > 0 {
-		char.PushState("Upgrading equipment")
-		defer char.PopState()
+func EquipBestEquipment(ctx context.Context, char *character.Character, targetStats *game.Stats) error {
+	bestEquipment := char.GetBestOwnedEquipment(targetStats)
 
+	upgradesInInventory := map[string]*game.Item{}
+	upgradesInBank := map[string]*game.Item{}
+	var slotsToUnequip []string
+
+	for slot, item := range bestEquipment.Equipment {
+		if char.Equipment[slot] == item.Code {
+			continue
+		}
+		if char.Equipment[slot] != "" {
+			slotsToUnequip = append(slotsToUnequip, slot)
+		}
+		if char.Inventory[item.Code] > 0 {
+			upgradesInInventory[slot] = item
+		} else {
+			upgradesInBank[slot] = item
+		}
+	}
+
+	if len(upgradesInInventory) == 0 && len(upgradesInBank) == 0 {
+		return nil
+	}
+
+	char.PushState("Upgrading equipment")
+	defer char.PopState()
+
+	bankBecauseInventoryFull := len(slotsToUnequip) > char.MaxInventoryItems()-char.InventoryCount()
+	needToBank := len(upgradesInBank) > 0 || bankBecauseInventoryFull
+	if needToBank {
 		err := MoveToBankAndDepositAll(ctx, char)
 		if err != nil {
 			return err
 		}
+	}
 
-		for slot, upgradeItemCode := range upgrades {
-			previousItem := char.Equipment[slot]
-			if previousItem != "" {
-				err = char.Unequip(ctx, client.UnequipSchemaSlot(slot))
-				if err != nil {
-					return err
-				}
-
-				_, err = char.DepositBank(ctx, previousItem, 1)
-				if err != nil {
-					return err
-				}
-			}
-
-			_, err = char.WithdrawBank(ctx, upgradeItemCode, 1)
-			if err != nil {
-				return err
-			}
-
-			err = char.Equip(ctx, client.EquipSchemaSlot(slot), upgradeItemCode)
-			if err != nil {
-				return err
-			}
+	for _, slot := range slotsToUnequip {
+		err := char.Unequip(ctx, client.UnequipSchemaSlot(slot))
+		if err != nil {
+			return err
 		}
 	}
+
+	for slot, item := range upgradesInBank {
+		err := Withdraw(ctx, char, item.Code, 1)
+		if err != nil {
+			return err
+		}
+
+		err = char.Equip(ctx, client.EquipSchemaSlot(slot), item.Code)
+		if err != nil {
+			return err
+		}
+	}
+
+	for slot, item := range upgradesInInventory {
+		err := char.Equip(ctx, client.EquipSchemaSlot(slot), item.Code)
+		if err != nil {
+			return err
+		}
+	}
+
+	if needToBank {
+		err := DepositAll(ctx, char)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

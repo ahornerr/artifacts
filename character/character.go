@@ -8,7 +8,8 @@ import (
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 	"log"
-	"strings"
+	"math"
+	"slices"
 	"time"
 )
 
@@ -443,89 +444,187 @@ func (c *Character) Equip(ctx context.Context, slot client.EquipSchemaSlot, item
 	return nil
 }
 
-func (c *Character) GetEquipmentUpgradesInBank(targetStats *game.Stats) map[string]string {
-	equipment := c.Equipment
-
-	bestAccumulatedStats := game.AccumulatedStatsItemCodes(equipment)
-
-	bestAttack := bestAccumulatedStats.GetDamageAgainst(targetStats)
-	bestResist := targetStats.GetDamageAgainst(bestAccumulatedStats)
-
-	bestOverall := bestAttack - bestResist
-	bestSet := equipment
-
-	for i := 0; i < len(equipment); i++ {
-		for slot1 := range equipment {
-			for itemCode1 := range c.bank.Items {
-				if !c.isItemValidForSlotAndLevel(slot1, itemCode1) {
-					continue
-				}
-
-				for slot2 := range equipment {
-					if slot2 == slot1 {
-						continue
-					}
-
-					for itemCode2, bankQuantity := range c.bank.Items {
-						if !c.isItemValidForSlotAndLevel(slot2, itemCode2) {
-							continue
-						}
-
-						// Check quantity because of ring1 and ring2
-						if itemCode1 == itemCode2 && bankQuantity < 2 {
-							continue
-						}
-
-						equipmentCopy := map[string]string{}
-						for slot, equipped := range equipment {
-							equipmentCopy[slot] = equipped
-						}
-
-						equipmentCopy[slot1] = itemCode1
-						equipmentCopy[slot2] = itemCode2
-
-						accumulatedStats := game.AccumulatedStatsItemCodes(equipmentCopy)
-
-						attack := accumulatedStats.GetDamageAgainst(targetStats)
-						resist := targetStats.GetDamageAgainst(accumulatedStats)
-
-						overall := attack - resist
-						if overall > bestOverall {
-							bestOverall = overall
-							bestSet = equipmentCopy
-						}
-					}
-				}
-			}
-		}
-	}
-
-	upgrades := map[string]string{}
-
-	for slot, itemCode := range bestSet {
-		if itemCode == "" || equipment[slot] == itemCode {
-			continue
-		}
-		upgrades[slot] = itemCode
-	}
-
-	return upgrades
+var equipmentTypes = map[string]bool{
+	"amulet":     true,
+	"body_armor": true,
+	"boots":      true,
+	"helmet":     true,
+	"leg_armor":  true,
+	"ring":       true,
+	"shield":     true,
+	"weapon":     true,
 }
 
-func (c *Character) isItemValidForSlotAndLevel(slot string, itemCode string) bool {
-	item := game.Items.Get(itemCode)
+type EquipmentSet struct {
+	Equipment          map[string]*game.Item
+	TurnsToKillMonster int
+	TurnsToKillPlayer  int
+	Haste              int
+}
 
-	if item.Level > c.GetLevel("combat") {
-		return false
+func NewEquipmentSet(other *EquipmentSet) *EquipmentSet {
+	s := &EquipmentSet{
+		Equipment: map[string]*game.Item{},
 	}
 
-	if item.Stats == nil {
-		return false
+	if other != nil {
+		// Copy best set to a new set, might not be the most efficient thing
+		for slot, item := range other.Equipment {
+			s.Equipment[slot] = item
+		}
 	}
 
-	if item.Type != slot && !(item.Type == "ring" && strings.HasPrefix(slot, "ring")) {
-		return false
+	return s
+}
+
+func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet {
+	invBankAndEquipment := map[*game.Item]bool{}
+	for itemCode := range c.bank.Items {
+		invBankAndEquipment[game.Items.Get(itemCode)] = true
+	}
+	for itemCode := range c.Inventory {
+		invBankAndEquipment[game.Items.Get(itemCode)] = true
+	}
+	for _, itemCode := range c.Equipment {
+		if itemCode != "" {
+			invBankAndEquipment[game.Items.Get(itemCode)] = true
+		}
 	}
 
-	return true
+	slotsEquipment := map[string][]*game.Item{}
+	for item := range invBankAndEquipment {
+		itemType := item.Type
+		if _, ok := equipmentTypes[itemType]; !ok {
+			continue
+		}
+		// TODO: Exclude items that are too low level/never going to be the best
+		if item.Level > c.GetLevel("combat") {
+			continue
+		}
+
+		if itemType == "ring" {
+			if _, ok := slotsEquipment["ring1"]; !ok {
+				slotsEquipment["ring1"] = []*game.Item{}
+			}
+			slotsEquipment["ring1"] = append(slotsEquipment["ring1"], item)
+
+			if _, ok := slotsEquipment["ring2"]; !ok {
+				slotsEquipment["ring2"] = []*game.Item{}
+			}
+			slotsEquipment["ring2"] = append(slotsEquipment["ring2"], item)
+		} else {
+			if _, ok := slotsEquipment[itemType]; !ok {
+				slotsEquipment[itemType] = []*game.Item{}
+			}
+			slotsEquipment[itemType] = append(slotsEquipment[itemType], item)
+		}
+	}
+
+	basePlayerHp := 120 + 5*c.GetLevel("combat")
+
+	set := NewEquipmentSet(nil)
+	for slot, itemCode := range c.Equipment {
+		if itemCode != "" {
+			set.Equipment[slot] = game.Items.Get(itemCode)
+		}
+	}
+
+	equipmentStats := game.AccumulatedStats(set.Equipment)
+	turnsToKillMonster, turnsToKillPlayer, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, nil)
+	set.TurnsToKillPlayer = turnsToKillPlayer
+	set.TurnsToKillMonster = turnsToKillMonster
+	set.Haste = haste
+	return set
+}
+
+func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int, slotsEquipment map[string][]*game.Item, ignoreSlots []string) (int, int, int) {
+	fewestTurnsToKill, mostTurnsToDie, bestHaste := calculateTurns(equipmentStats, targetStats, basePlayerHp)
+
+	// Pick a slot. Pick an item. Put an item in the slot. Calculate all other slots
+	for slot, items := range slotsEquipment {
+		if slices.Contains(ignoreSlots, slot) {
+			continue
+		}
+		if len(items) == 0 {
+			continue
+		}
+
+		currentItem := set.Equipment[slot]
+
+		// No item equipped. Only one possible item for this slot, it will be the best
+		if currentItem == nil && len(items) == 1 {
+			set.Equipment[slot] = items[0]
+			equipmentStats.Add(items[0].Stats)
+			fewestTurnsToKill, mostTurnsToDie, bestHaste = calculateTurns(equipmentStats, targetStats, basePlayerHp)
+			continue
+		}
+
+		// Item equipped and it's the only possible item. Do nothing
+		if currentItem == items[0] && len(items) == 1 {
+			continue
+		}
+
+		// This shouldn't be possible as the current item should be included in the possible items
+		if currentItem != items[0] && len(items) == 1 {
+			panic("This shouldn't happen")
+		}
+
+		bestItem := currentItem
+
+		if currentItem != nil {
+			equipmentStats.Remove(currentItem.Stats)
+			delete(set.Equipment, slot)
+		}
+
+		for _, item := range items {
+			if item == currentItem {
+				// We've already done the math for this item, either at the beginning or in a previous loop
+				continue
+			}
+
+			set.Equipment[slot] = item
+			equipmentStats.Add(item.Stats)
+
+			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, append(ignoreSlots, slot))
+
+			delete(set.Equipment, slot)
+			equipmentStats.Remove(item.Stats)
+
+			if turnsToKill < fewestTurnsToKill || (turnsToKill == fewestTurnsToKill && haste > bestHaste) {
+				fewestTurnsToKill = turnsToKill
+				mostTurnsToDie = turnsToDie
+				bestHaste = haste
+				bestItem = item
+			}
+		}
+
+		// bestItem should never be nil theoretically
+		set.Equipment[slot] = bestItem
+		equipmentStats.Add(bestItem.Stats)
+	}
+
+	return fewestTurnsToKill, mostTurnsToDie, bestHaste
+}
+
+func calculateTurns(equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int) (int, int, int) {
+	playerAttack := int(equipmentStats.GetDamageAgainst(targetStats))
+	monsterAttack := int(targetStats.GetDamageAgainst(equipmentStats))
+
+	playerHp := equipmentStats.Hp + basePlayerHp
+
+	var turnsToKillMonster int
+	if playerAttack <= 0 {
+		turnsToKillMonster = math.MaxInt32
+	} else {
+		turnsToKillMonster = int(math.Ceil(float64(targetStats.Hp) / float64(playerAttack)))
+	}
+
+	var turnsToKillPlayer int
+	if monsterAttack <= 0 {
+		turnsToKillPlayer = math.MaxInt32
+	} else {
+		turnsToKillPlayer = int(math.Ceil(float64(playerHp) / float64(monsterAttack)))
+	}
+
+	return turnsToKillMonster, turnsToKillPlayer, equipmentStats.Haste
 }

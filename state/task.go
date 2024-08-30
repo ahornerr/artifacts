@@ -93,17 +93,19 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 	}
 
 	// Bank if full, get better equipment, move to monster, fight once
-	fightState, fightArgs := NewFightArgs(char.Task)
-	err := Run(ctx, char, fightState, fightArgs)
+	fightArgs := NewFightArgs(char.Task, func(c *character.Character, args *FightArgs) bool {
+		return args.NumFights() > 0
+	})
+	err := Run(ctx, char, FightLoop, fightArgs)
 	if err != nil {
 		return nil, err
 	}
 
-	args.Results = append(args.Results, fightArgs.Result.Result)
-	args.Xp += fightArgs.Result.Xp
-	args.Gold += fightArgs.Result.Gold
-	for _, drop := range fightArgs.Result.Drops {
-		args.Drops[drop.Code] += drop.Quantity
+	args.Results = append(args.Results, fightArgs.Results...)
+	args.Xp += fightArgs.Xp
+	args.Gold += fightArgs.Gold
+	for itemCode, quantity := range fightArgs.Drops {
+		args.Drops[itemCode] += quantity
 	}
 
 	return TaskLoop, nil
