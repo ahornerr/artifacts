@@ -12,6 +12,8 @@ type FightArgs struct {
 	Result  *client.FightSchema
 }
 
+// TODO: Add a fight loop
+
 func NewFightArgs(monsterCode string) (State[*FightArgs], *FightArgs) {
 	return Fight, &FightArgs{
 		Monster: game.Monsters.Get(monsterCode),

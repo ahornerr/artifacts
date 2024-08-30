@@ -35,20 +35,3 @@ type Item struct {
 func (i Item) String() string {
 	return i.Name
 }
-
-// TODO: This might be wrong
-func (i Item) GetAllSkillRequirements() map[string]int {
-	skills := map[string]int{}
-	if i.Crafting != nil {
-		skills[i.Crafting.Skill] = i.Crafting.Level
-
-		for craftingItem := range i.Crafting.Items {
-			for skill, level := range craftingItem.GetAllSkillRequirements() {
-				if level > skills[skill] {
-					skills[skill] = level
-				}
-			}
-		}
-	}
-	return skills
-}

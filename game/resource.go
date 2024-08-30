@@ -1,11 +1,9 @@
 package game
 
 type Resource struct {
-	Code string
-	Name string
-	Loot []Drop
-
-	// TODO: Are Skill and Level always populated?
+	Code  string
+	Name  string
+	Loot  []Drop
 	Skill string
 	Level int
 }
