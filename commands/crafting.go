@@ -20,7 +20,7 @@ func NewCraftingLoop(itemCode string, stop stopper.Stopper) command.Command {
 			return shouldStop, err
 		}
 
-		totalCraftable, _ := getNumCanCraft(*item.Crafting, char.Inventory, char.Bank())
+		totalCraftable, _ := getNumCanCraft(item.Crafting, char.Inventory, char.Bank())
 		return totalCraftable == 0, nil
 	})
 
@@ -38,7 +38,7 @@ func NewCraftingLoop(itemCode string, stop stopper.Stopper) command.Command {
 }
 
 // Calculate the maximum number of items we can craft given the resources in our inventory and bank
-func getNumCanCraft(crafting game.Crafting, inventory map[string]int, bank map[string]int) (totalCraftable int, inventoryCraftable int) {
+func getNumCanCraft(crafting *game.Crafting, inventory map[string]int, bank map[string]int) (totalCraftable int, inventoryCraftable int) {
 	totalCraftable = math.MaxInt32
 	inventoryCraftable = math.MaxInt32
 
@@ -70,7 +70,7 @@ func BankForCrafting(item *game.Item) command.Command {
 			// Withdraw as many items from the bank as we can, then craft the resources one by one, checking the stopper between
 			// This works around an issue of calculating number of items to craft on each iteration.
 			// totalCraftable cannot be 0 because we check it in the stopper.
-			totalCraftable, inventoryCraftable := getNumCanCraft(*item.Crafting, char.Inventory, char.Bank())
+			totalCraftable, inventoryCraftable := getNumCanCraft(item.Crafting, char.Inventory, char.Bank())
 
 			switch {
 			case inventoryCraftable == totalCraftable:

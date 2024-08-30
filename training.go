@@ -111,7 +111,7 @@ package main
 //			return fmt.Errorf("moving to bank: %w", err)
 //		}
 //
-//		err = r.Char.BankAll(ctx)
+//		err = r.Char.DepositAll(ctx)
 //		if err != nil {
 //			return fmt.Errorf("banking all: %w", err)
 //		}

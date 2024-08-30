@@ -15,7 +15,7 @@ func (t *Task) Children() []Node {
 }
 
 func (t *Task) String() string {
-	return ""
+	return "Task"
 }
 
 func (t *Task) MarshalJSON() ([]byte, error) {

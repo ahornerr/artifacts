@@ -22,10 +22,10 @@ func EquipBestEquipmentForMonster(monster *game.Monster) command.Command {
 }
 
 func EquipBestEquipmentForResource(resource *game.Resource) command.Command {
-	skillStats := game.Stats{
+	skillStats := &game.Stats{
 		Attack: nil,
 		Resistance: map[string]int{
-			string(resource.Skill): -math.MaxInt32,
+			resource.Skill: -math.MaxInt32,
 		},
 	}
 
@@ -50,10 +50,9 @@ func Equip(slot, itemCode string) command.Command {
 	)
 }
 
-func GetAndEquipUpgrades(stats game.Stats) command.Command {
+func GetAndEquipUpgrades(stats *game.Stats) command.Command {
 	return command.SequenceFunc(func(ctx context.Context, char *character.Character) []command.Command {
 		upgrades := char.GetEquipmentUpgradesInBank(stats)
-		equipment := char.GetEquippedItems()
 
 		var sequence []command.Command
 		if len(upgrades) > 0 {
@@ -62,7 +61,7 @@ func GetAndEquipUpgrades(stats game.Stats) command.Command {
 			for slot, upgradeItemCode := range upgrades {
 				var slotSequence []command.Command
 
-				currentItem := equipment[slot]
+				currentItem := char.Equipment[slot]
 
 				if currentItem != "" {
 					slotSequence = append(

@@ -2,19 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/ahornerr/artifacts/bank"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/client"
-	"github.com/ahornerr/artifacts/command"
-	"github.com/ahornerr/artifacts/commands"
-	"github.com/ahornerr/artifacts/stopper"
+	_ "github.com/ahornerr/artifacts/game"
+	"github.com/ahornerr/artifacts/state"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
 	client, err := client.New(os.Getenv("ARTIFACTS_TOKEN"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	events := make(chan Event)
 
@@ -47,61 +49,243 @@ func main() {
 		log.Fatalf("loading bank items: %s", err)
 	}
 
-	sequenceGetItem := func(itemCode string, quantity int) command.Command {
-		return command.Sequence(
-			commands.SequenceMoveToBankAndDepositAll,
-			commands.GetItem(itemCode, quantity),
-			commands.SequenceMoveToBankAndDepositAll,
-		)
+	//sequenceGetItem := func(itemCode string, quantity int) command.Command {
+	//	return command.Sequence(
+	//		commands.SequenceMoveToBankAndDepositAll,
+	//		commands.GetItem(itemCode, quantity),
+	//		commands.SequenceMoveToBankAndDepositAll,
+	//	)
+	//}
+
+	//mainSequence := func() command.Command {
+	//	return command.Sequence(
+	//		//commands.NewCraftingLoop("steel", stopper.Never{}),
+	//		commands.NewHarvestLoop("iron_rocks", stopper.AtQuantity(1000)),
+	//		commands.NewCraftingLoop("steel", stopper.Never{}),
+	//	)
+	//}
+
+	// commands.NewCraftingLoop("steel", stopper.AtQuantity(20))
+	// commands.NewCraftingLoop("iron_helm", stopper.AtLevel("gearcrafting", 20)),
+	// commands.NewFightLoop("cow", stopper.Never{})
+	//commands.NewTaskLoop(stopper.Never{})
+
+	//crafterSequence := command.NewLoop(
+	//	stopper.Never{},
+	//	func(iteration int) string {
+	//		return fmt.Sprintf("Main sequence: %d", iteration)
+	//	},
+	//	//commands.NewCraftingLoop("copper", stopper.Never{}),
+	//	//commands.NewCraftingLoop("copper_dagger", stopper.AtLevel("weaponcrafting", 5)),
+	//	//commands.NewCraftingLoop("ash_plank", stopper.Never{}),
+	//	//commands.NewCraftingLoop("wooden_shield", stopper.AtLevel("gearcrafting", 5)),
+	//	//commands.NewCraftingLoop("copper_ring", stopper.AtLevel("jewelrycrafting", 5)),
+	//	//commands.NewHarvestLoop("ash_tree", stopper.AtQuantity(100)),
+	//	//commands.NewHarvestLoop("copper_rocks", stopper.AtQuantity(100)),
+	//	//commands.NewFightLoop("chicken", stopper.Never{}),
+	//
+	//	commands.NewFightLoop("chicken", stopper.NewStopper(func(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+	//		numFeather := char.Inventory["feather"] + char.Bank()["feather"]
+	//		return numFeather >= 4*5+2*4, nil
+	//	})),
+	//
+	//	commands.NewFightLoop("yellow_slime", stopper.NewStopper(func(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+	//		numSlimes := char.Inventory["yellow_slimeball"] + char.Bank()["yellow_slimeball"]
+	//		return numSlimes >= 10, nil
+	//	})),
+	//
+	//	commands.NewFightLoop("green_slime", stopper.NewStopper(func(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+	//		numSlimes := char.Inventory["green_slimeball"] + char.Bank()["green_slimeball"]
+	//		return numSlimes >= 10, nil
+	//	})),
+	//
+	//	commands.NewTaskLoop(stopper.Never{}),
+	//
+	//	commands.NewFightLoop("blue_slime", stopper.NewStopper(func(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+	//		numSlimes := char.Inventory["blue_slimeball"] + char.Bank()["blue_slimeball"]
+	//		return numSlimes >= 10, nil
+	//	})),
+	//
+	//	//commands.NewFightLoop("yellow_slime", stopper.NewStopper(func(ctx context.Context, char *character.Character, quantity int) (bool, error) {
+	//	//	numSlimes := char.Inventory["yellow_slimeball"] + char.Bank()["yellow_slimeball"]
+	//	//	return numSlimes >= 10, nil
+	//	//})),
+	//)
+
+	//subFighterSequence := func() command.Command {
+	//	return command.Sequence(
+	//		commands.NewTaskLoop(stopper.Never{}),
+	//		commands.NewFightLoop("chicken", stopper.AtLevel("combat", 5)),
+	//		commands.NewFightLoop("yellow_slime", stopper.AtLevel("combat", 7)),
+	//		commands.NewFightLoop("green_slime", stopper.AtLevel("combat", 8)),
+	//		commands.NewFightLoop("blue_slime", stopper.AtLevel("combat", 9)),
+	//		commands.NewFightLoop("red_slime", stopper.AtLevel("combat", 10)),
+	//		commands.NewHarvestLoop("copper_rocks", stopper.Never{}),
+	//	)
+	//}
+
+	//woodcutThenMine := func() command.Command {
+	//	return command.Sequence(
+	//		commands.NewHarvestLoop("ash_tree", stopper.AtLevel("woodcutting", 10)),
+	//		commands.NewHarvestLoop("copper_rocks", stopper.AtLevel("mining", 10)),
+	//		commands.NewHarvestLoop("spruce_tree", stopper.AtLevel("woodcutting", 20)),
+	//		commands.NewHarvestLoop("iron_rocks", stopper.AtLevel("mining", 20)),
+	//	)
+	//}
+	//
+	//mineThenWoodcut := func() command.Command {
+	//	return command.Sequence(
+	//		commands.NewHarvestLoop("copper_rocks", stopper.AtLevel("mining", 10)),
+	//		commands.NewHarvestLoop("ash_tree", stopper.AtLevel("woodcutting", 10)),
+	//		commands.NewHarvestLoop("iron_rocks", stopper.AtLevel("mining", 20)),
+	//		commands.NewHarvestLoop("spruce_tree", stopper.AtLevel("woodcutting", 20)),
+	//	)
+	//}
+
+	//characterCommands := map[string]command.Command{
+	//	"curlyBoy1": subFighterSequence(),
+	//	"curlyBoy2": subFighterSequence(),
+	//	"curlyBoy3": subFighterSequence(),
+	//	"curlyBoy4": subFighterSequence(),
+	//	"curlyBoy5": subFighterSequence(),
+	//	//"curlyBoy2": woodcutThenMine(),
+	//	//"curlyBoy3": woodcutThenMine(),
+	//	//"curlyBoy4": mineThenWoodcut(),
+	//	//"curlyBoy5": mineThenWoodcut(),
+	//}
+
+	characterNames := []string{
+		"curlyBoy1", "curlyBoy2", "curlyBoy3", "curlyBoy4", "curlyBoy5",
 	}
-
-	mainSequence := func() command.Command {
-		return command.Sequence(
-			commands.NewHarvestLoop("ash_tree", stopper.AtQuantity(500)),
-			commands.NewCraftingLoop("hardwood_plank", stopper.AtLevel("woodcutting", 25)),
-
-			// Will stop when all spruce logs are crafted into planks
-			//commands.NewCraftingLoop("spruce_plank", stopper.AtLevel("woodcutting", 20)),
-			//commands.NewHarvestLoop("spruce_tree", stopper.AtLevel("woodcutting", 20)),
-			//commands.NewCraftingLoop("spruce_plank", stopper.AtLevel("woodcutting", 20)),
-			//commands.NewHarvestLoop("birch_tree", stopper.Never{}),
-		)
-	}
-
-	characterCommands := map[string]command.Command{
-		"curlyBoy":  sequenceGetItem("skull_staff", 1),
-		"curlyBoy2": mainSequence(),
-		"curlyBoy3": mainSequence(),
-		"curlyBoy4": mainSequence(),
-		"curlyBoy5": mainSequence(),
-	}
-
 	characters := map[string]*character.Character{}
-
-	for charName, cmd := range characterCommands {
+	for _, charName := range characterNames {
 		char := character.NewCharacter(client, theBank, characterUpdates, charName)
-
 		_, err = char.Get(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		characters[charName] = char
-
-		go func(char *character.Character, command command.Command) {
-			err := executeCommand(ctx, char, command, nil)
-			if err != nil {
-				log.Println("Executor error: ", err)
-				return
-			}
-
-			char.Action([]string{"Done"})
-		}(char, cmd)
-
 	}
 
+	totalItemQuantity := func(itemCode string) int {
+		quantity := theBank.Items[itemCode]
+
+		for _, char := range characters {
+			quantity += char.Inventory[itemCode]
+
+			for _, equipItemCode := range char.Equipment {
+				if equipItemCode == itemCode {
+					quantity++
+				}
+			}
+		}
+		return quantity
+	}
+
+	characterStates := map[string]state.Runner{
+		"curlyBoy1": state.Loop(
+			state.Harvest("ash_tree", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.GetLevel("woodcutting") >= 10
+			}),
+			state.Craft("ash_plank", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["ash_wood"] < 8
+			}),
+			state.Craft("spruce_plank", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Bank()["spruce_plank"]+c.Inventory["spruce_plank"] >= 10
+			}),
+			state.Craft("iron_axe", func(c *character.Character, args *state.CraftingArgs) bool {
+				return totalItemQuantity("iron_axe") == 5
+			}),
+			state.Craft("iron_pickaxe", func(c *character.Character, args *state.CraftingArgs) bool {
+				return totalItemQuantity("iron_pickaxe") == 5
+			}),
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We've completed one task
+				if len(args.Rewards) > 0 {
+					return true
+				}
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumWins() == 0 {
+					return true
+				}
+				return false
+			}),
+		),
+		"curlyBoy2": state.Loop(
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy3": state.Loop(
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy4": state.Loop(
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy5": state.Loop(
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+	}
+
+	for charName, charState := range characterStates {
+		go func(char *character.Character, charState state.Runner) {
+			char.PushState("Waiting for cooldown")
+			time.Sleep(time.Until(char.CooldownExpires))
+			char.PopState()
+
+			err := charState(ctx, char)
+			if err != nil {
+				char.PushState("Error: %s", err)
+			} else {
+				char.PushState("Done")
+			}
+		}(characters[charName], charState)
+	}
+
+	//for charName, cmd := range characterCommands {
+	//	char := character.NewCharacter(client, theBank, characterUpdates, charName)
+	//
+	//	_, err = char.Get(ctx)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	//	characters[charName] = char
+	//
+	//	//graph2.BestEquipmentAgainst(game.Monsters.Get("ogre").Stats, char)
+	//
+	//	go func(char *character.Character, command command.Command) {
+	//		err := executeCommand(ctx, char, command, nil)
+	//		if err != nil {
+	//			log.Println("Executor error: ", err)
+	//			return
+	//		}
+	//
+	//		char.Action([]string{"Done"})
+	//	}(char, cmd)
+	//}
+
 	onNewClient := func() {
-		for charName := range characterCommands {
+		// Iterate over the slice since it's ordered
+		for _, charName := range characterNames {
 			events <- Event{Character: characters[charName]}
 		}
 		events <- Event{Bank: theBank.Items}
@@ -112,48 +296,46 @@ func main() {
 	log.Fatal(server.Listen(":8080"))
 }
 
-func executeCommand(ctx context.Context, char *character.Character, cmd command.Command, actions []string) error {
-	tailRecursion := false
-
-	description := cmd.Description()
-	if description != "" {
-		actions = append(actions, description)
-	}
-	for {
-		char.Action(actions)
-
-		nextCommands, err := cmd.Execute(ctx, char)
-		if err != nil {
-			actions = append(actions, fmt.Sprintf("Error: %s", err.Error()))
-			char.Action(actions)
-			return err
-		}
-
-		char.WaitForCooldown()
-
-		if len(nextCommands) > 0 {
-			tailRecursion = nextCommands[len(nextCommands)-1] == cmd
-		} else {
-			tailRecursion = false
-		}
-
-		if tailRecursion {
-			nextCommands = nextCommands[:len(nextCommands)-1]
-			actions[len(actions)-1] = cmd.Description()
-		}
-
-		for _, nextCommand := range nextCommands {
-			err := executeCommand(ctx, char, nextCommand, actions)
-			if err != nil {
-				return err
-			}
-		}
-
-		if !tailRecursion {
-			return nil
-		}
-	}
-}
+//func executeCommand(ctx context.Context, char *character.Character, cmd command.Command, actions []string) error {
+//	tailRecursion := false
+//
+//	description := cmd.Description()
+//	if description != "" {
+//		actions = append(actions, description)
+//	}
+//	for {
+//		char.Action(actions)
+//
+//		nextCommands, err := cmd.Execute(ctx, char)
+//		if err != nil {
+//			actions = append(actions, fmt.Sprintf("Error: %s", err.Error()))
+//			char.Action(actions)
+//			return err
+//		}
+//
+//		if len(nextCommands) > 0 {
+//			tailRecursion = nextCommands[len(nextCommands)-1] == cmd
+//		} else {
+//			tailRecursion = false
+//		}
+//
+//		if tailRecursion {
+//			nextCommands = nextCommands[:len(nextCommands)-1]
+//			actions[len(actions)-1] = cmd.Description()
+//		}
+//
+//		for _, nextCommand := range nextCommands {
+//			err := executeCommand(ctx, char, nextCommand, actions)
+//			if err != nil {
+//				return err
+//			}
+//		}
+//
+//		if !tailRecursion {
+//			return nil
+//		}
+//	}
+//}
 
 //func (r *Executor) acquireItem(ctx context.Context, itemCode string, wantQuantity int) error {
 //	r.reportAction("Acquiring %d %s", wantQuantity, itemCode)
@@ -190,7 +372,7 @@ func executeCommand(ctx context.Context, char *character.Character, cmd command.
 //		return r.craft(ctx, itemCode, wantQuantity)
 //	} else {
 //		var selectedResource *client.ResourceSchema
-//		for _, drop := range r.Game.Drops[item.Code] {
+//		for _, drop := range r.Game.ResourcesForItem[item.Code] {
 //			if drop.Level > r.Char.GetLevel(string(drop.Skill)) {
 //				continue
 //			}

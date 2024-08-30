@@ -54,7 +54,7 @@ var (
 	})
 
 	SequenceCompleteTaskIfFinished = command.SequenceFunc(func(ctx context.Context, char *character.Character) []command.Command {
-		if char.TaskProgress == char.TaskTotal {
+		if char.Task != "" && char.TaskProgress == char.TaskTotal {
 			return []command.Command{MoveToTaskmaster, CompleteTask}
 		}
 		return nil
@@ -63,7 +63,7 @@ var (
 
 type TaskLoop struct {
 	stop             stopper.Stopper
-	monster          *game.Monster
+	monsterCode      string
 	numKilled        int
 	lastProgress     int
 	fightsWithoutWin int
@@ -74,7 +74,7 @@ func NewTaskLoop(stop stopper.Stopper) command.Command {
 }
 
 func (t *TaskLoop) Description() string {
-	return fmt.Sprintf("Task %s (killed %d)", t.monster.Name, t.numKilled)
+	return fmt.Sprintf("Task (killed %d)", t.numKilled)
 }
 
 func (t *TaskLoop) Execute(ctx context.Context, char *character.Character) ([]command.Command, error) {
@@ -83,9 +83,9 @@ func (t *TaskLoop) Execute(ctx context.Context, char *character.Character) ([]co
 		return nil, err
 	}
 
-	taskChanged := char.Task != t.monster.Code
+	taskChanged := char.Task != t.monsterCode
 	if taskChanged {
-		t.monster = game.Monsters.Get(char.Task)
+		t.monsterCode = char.Task
 		t.numKilled = 0
 		t.fightsWithoutWin = 0
 	} else {
@@ -98,8 +98,9 @@ func (t *TaskLoop) Execute(ctx context.Context, char *character.Character) ([]co
 		}
 	}
 
-	if t.fightsWithoutWin > 3 {
-		return []command.Command{NewFightLoop("skeleton", t.stop)}, nil
+	if t.fightsWithoutWin > 5 {
+		//return []command.Command{NewFightLoop("chicken", t.stop)}, nil
+		return nil, nil
 	}
 
 	return []command.Command{

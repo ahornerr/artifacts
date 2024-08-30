@@ -16,6 +16,16 @@ type Event struct {
 	Bank      map[string]int
 }
 
+func marshalEvent(event Event) (byteArray []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recovered panic %+v for event %+v", r, event)
+		}
+	}()
+
+	return json.Marshal(event)
+}
+
 func httpServer(events <-chan Event, onNewClient func()) *fiber.App {
 	app := fiber.New()
 
@@ -23,6 +33,7 @@ func httpServer(events <-chan Event, onNewClient func()) *fiber.App {
 	deleteClient := make(chan chan []byte)
 
 	clients := map[chan []byte]bool{}
+
 	go func() {
 		for {
 			select {
@@ -35,11 +46,12 @@ func httpServer(events <-chan Event, onNewClient func()) *fiber.App {
 					continue
 				}
 
-				message, err := json.Marshal(ev)
+				message, err := marshalEvent(ev)
 				if err != nil {
 					log.Println("Error marshalling event:", err)
+					continue
 				}
-				//lastMessage = message
+
 				for client := range clients {
 					// Non-blocking write in case something goes wrong
 					select {

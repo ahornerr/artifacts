@@ -1,14 +1,14 @@
 package graph
 
 import (
-	"fmt"
 	"github.com/ahornerr/artifacts/game"
 )
 
 type Item struct {
 	Item     *game.Item
 	Quantity int
-	Source   Node
+	//Source   Node
+	children []Node
 }
 
 func NewItem(item *game.Item, quantity int) *Item {
@@ -16,7 +16,7 @@ func NewItem(item *game.Item, quantity int) *Item {
 
 	// Acquired via harvesting
 	for _, resource := range game.Resources.ResourcesForItem(item) {
-		sources = append(sources, NewResource(resource))
+		sources = append(sources, NewResource(resource, item))
 	}
 
 	// Acquired via monsters
@@ -27,7 +27,11 @@ func NewItem(item *game.Item, quantity int) *Item {
 
 	// Acquired via crafting
 	if item.Crafting != nil {
-		sources = append(sources, NewCrafting(item.Crafting))
+		//sources = append(sources, NewCrafting(item.Crafting))
+		for craftingItem, craftingQuantity := range item.Crafting.Items {
+			sources = append(sources, NewItem(craftingItem, quantity*craftingQuantity))
+		}
+
 	}
 
 	// Acquired via tasking
@@ -35,14 +39,14 @@ func NewItem(item *game.Item, quantity int) *Item {
 		sources = append(sources, NewTask())
 	}
 
-	if len(sources) > 1 {
-		sources = []Node{NewOption(sources...)}
-	}
+	//if len(sources) > 1 {
+	//	sources = []Node{NewOption(sources...)}
+	//}
 
 	return &Item{
 		Item:     item,
 		Quantity: quantity,
-		Source:   sources[0], // This should only have exactly one item
+		children: sources,
 	}
 }
 
@@ -51,11 +55,12 @@ func (i *Item) Type() Type {
 }
 
 func (i *Item) Children() []Node {
-	return []Node{i.Source}
+	return i.children
 }
 
 func (i *Item) String() string {
-	return fmt.Sprintf("%dx %s", i.Quantity, i.Item.Name)
+	//return fmt.Sprintf("%dx %s", i.Quantity, i.Item.Name)
+	return i.Item.Name
 }
 
 func (i *Item) MarshalJSON() ([]byte, error) {

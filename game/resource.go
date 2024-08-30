@@ -10,6 +10,10 @@ type Resource struct {
 	Level int
 }
 
+func (r Resource) String() string {
+	return r.Name
+}
+
 type Drop struct {
 	Item        *Item
 	MaxQuantity int

@@ -73,7 +73,11 @@ func (m *maps) load(ctx context.Context) error {
 				m.maps[content.Type][content.Code] = []Location{}
 			}
 
-			m.maps[content.Type][content.Code] = append(m.maps[content.Type][content.Code], Location{X: tile.X, Y: tile.Y})
+			m.maps[content.Type][content.Code] = append(m.maps[content.Type][content.Code], Location{
+				Name: content.Code,
+				X:    tile.X,
+				Y:    tile.Y,
+			})
 		}
 
 		if len(resp.JSON200.Data) < size {

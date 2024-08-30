@@ -24,6 +24,10 @@ func (m *monsters) Get(monsterCode string) *Monster {
 	return m.monsters[monsterCode]
 }
 
+func (m *monsters) GetAll() map[string]*Monster {
+	return m.monsters
+}
+
 func (m *monsters) MonstersForItem(item *Item) []*Monster {
 	return m.drops[item]
 }

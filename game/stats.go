@@ -17,30 +17,90 @@ type Stats struct {
 	BoostDamage map[string]int
 }
 
-// TODO: This doesn't work right when the eqipment provides a damage bonus but there's no attack bonus
-func (s Stats) GetDamageAgainst(other Stats) float64 {
+func (s *Stats) Add(other *Stats) {
+	s.Hp += other.Hp
+	s.Restore += other.Restore
+	s.Haste += other.Haste
+	s.BoostHp += other.BoostHp
+	for element, attack := range other.Attack {
+		s.Attack[element] += attack
+	}
+	for element, resistance := range other.Resistance {
+		s.Resistance[element] += resistance
+	}
+	for element, damage := range other.Damage {
+		s.Damage[element] += damage
+	}
+	for element, boost := range other.BoostDamage {
+		s.BoostDamage[element] += boost
+	}
+}
+
+func (s *Stats) Remove(other *Stats) {
+	s.Hp -= other.Hp
+	s.Restore -= other.Restore
+	s.Haste -= other.Haste
+	s.BoostHp -= other.BoostHp
+	for element, attack := range other.Attack {
+		s.Attack[element] -= attack
+	}
+	for element, resistance := range other.Resistance {
+		s.Resistance[element] -= resistance
+	}
+	for element, damage := range other.Damage {
+		s.Damage[element] -= damage
+	}
+	for element, boost := range other.BoostDamage {
+		s.BoostDamage[element] -= boost
+	}
+}
+
+func AccumulatedStats(items map[string]*Item) *Stats {
+	accumulated := &Stats{
+		Attack:      map[string]int{"fire": 0, "water": 0, "earth": 0, "air": 0},
+		Resistance:  map[string]int{"fire": 0, "water": 0, "earth": 0, "air": 0},
+		Damage:      map[string]int{"fire": 0, "water": 0, "earth": 0, "air": 0},
+		BoostDamage: map[string]int{"fire": 0, "water": 0, "earth": 0, "air": 0},
+	}
+	for _, item := range items {
+		accumulated.Add(item.Stats)
+	}
+	return accumulated
+}
+
+func AccumulatedStatsItemCodes(itemCodes map[string]string) *Stats {
+	items := map[string]*Item{}
+	for slot, itemCode := range itemCodes {
+		if itemCode == "" {
+			continue
+		}
+		item := Items.Get(itemCode)
+		if item == nil {
+			continue
+		}
+		items[slot] = item
+	}
+	return AccumulatedStats(items)
+}
+
+func (s Stats) GetDamageAgainst(other *Stats) float64 {
 	totalDamage := 0.0
 
 	for element, attack := range s.Attack {
 		damage := s.Damage[element]
 		resistance := other.Resistance[element]
 
-		totalDamage += float64(attack) * (1 + float64(damage)/100.0) * (1 - float64(resistance)/100.0)
-	}
-
-	for element, damage := range s.Damage {
-		if s.Attack[element] > 0 {
-			// We've already accounted for damage in the attack calculation
-			continue
-		}
-		totalDamage += float64(damage) * (1 + float64(damage)/100.0) * (1 - float64(other.Resistance[element])/100.0)
+		totalDamage += float64(attack) *
+			(1 + float64(damage)/100.0) *
+			(1 - float64(resistance)/100.0) *
+			(1 - float64(resistance)/1000.0)
 	}
 
 	return totalDamage
 }
 
-func StatsFromMonster(monsterSchema client.MonsterSchema) Stats {
-	return Stats{
+func StatsFromMonster(monsterSchema client.MonsterSchema) *Stats {
+	return &Stats{
 		Hp: monsterSchema.Hp,
 		Attack: map[string]int{
 			"air":   monsterSchema.AttackAir,
@@ -57,8 +117,12 @@ func StatsFromMonster(monsterSchema client.MonsterSchema) Stats {
 	}
 }
 
-func StatsFromItem(itemSchema client.ItemSchema) Stats {
-	stats := Stats{
+func StatsFromItem(itemSchema client.ItemSchema) *Stats {
+	if itemSchema.Effects == nil || len(*itemSchema.Effects) == 0 {
+		return nil
+	}
+
+	stats := &Stats{
 		Attack:      map[string]int{},
 		Resistance:  map[string]int{},
 		Damage:      map[string]int{},

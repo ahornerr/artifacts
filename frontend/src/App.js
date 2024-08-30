@@ -68,7 +68,7 @@ function App() {
               <Character char={data.Characters[charName]}/>
             </Grid>
           )}
-          <Grid xs={12} item container spacing={2} >
+          <Grid xs={12} item container spacing={2}>
             <Grid item xs={12} md={6} sx={{display: "flex", flexDirection: "column"}}>
               <Paper sx={{p: 2, height: "100%"}} elevation={4}>
                 <Typography sx={{mb: 2}}>Bank</Typography>
@@ -119,12 +119,12 @@ function LinearProgressWithLabel(props) {
   );
 }
 
-function buildActionsString(actions) {
-  if (!actions) {
+function buildStateString(state) {
+  if (!state) {
     return ""
   }
-  return actions.map((action, i) => {
-    return "  ".repeat(i) + action
+  return state.map((state, i) => {
+    return "  ".repeat(i) + state
   }).join("\n")
 }
 
@@ -154,7 +154,7 @@ function Character({char}) {
     <CardHeader
       avatar={<Avatar src={`https://artifactsmmo.com/images/characters/${char.Skin}.png`}/>}
       title={char.Name}
-      subheader={buildActionsString(char.Actions)}
+      subheader={buildStateString(char.State)}
       subheaderTypographyProps={{whiteSpace: "pre-wrap"}}
     />
     <CardContent sx={{p: {xs: 1, sm: 2, xl: 2}}}>
@@ -177,16 +177,20 @@ function Character({char}) {
             Skills
           </Typography>
           <Typography sx={{color: 'text.secondary'}}>
-            {char.TotalXp} total xp
+            {char.Gold} gold
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {skills.map(skill =>
-            <Box py={0} mb={1} key={skill}>
-              <Typography textTransform="capitalize">{char.Levels[skill]} {skill}</Typography>
-              <LinearProgressWithLabel variant="determinate" value={char.Xp[skill] / char.MaxXp[skill] * 100}/>
-            </Box>
-          )}
+          <Grid container>
+            {skills.map(skill =>
+              <Grid item xs={6} lg={12} xl={6} sm={12} key={skill}>
+                <Box py={0} mb={1}>
+                  <Typography textTransform="capitalize">{char.Levels[skill]} {skill}</Typography>
+                  <LinearProgressWithLabel variant="determinate" value={char.Xp[skill] / char.MaxXp[skill] * 100}/>
+                </Box>
+              </Grid>
+            )}
+          </Grid>
         </AccordionDetails>
       </Accordion>
       <Accordion>
@@ -196,7 +200,6 @@ function Character({char}) {
           </Typography>
           <Typography sx={{color: 'text.secondary'}}>
             {inventoryUsed} / {char.InventoryMaxItems} items
-            {/*{char.Character.gold} gold*/}
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -214,11 +217,14 @@ function Character({char}) {
             {Object.keys(char.Equipment).map(slot =>
               <Grid item xs="auto" key={slot}>
                 <Tooltip title={char.Equipment[slot]}>
-                  <Paper sx={{p: 1, pt: 1.5}} elevation={4}>
-                    <Avatar src={`https://artifactsmmo.com/images/items/${char.Equipment[slot]}.png`} variant="rounded">
-                      {slot}
-                    </Avatar>
-                  </Paper>
+                  <a href={`https://artifactsmmo.com/encyclopedia/items/${char.Equipment[slot]}`} target="_blank">
+                    <Paper sx={{p: 1, pt: 1.5}} elevation={4}>
+                      <Avatar src={`https://artifactsmmo.com/images/items/${char.Equipment[slot]}.png`}
+                              variant="rounded">
+                        {slot}
+                      </Avatar>
+                    </Paper>
+                  </a>
                 </Tooltip>
               </Grid>
             )}
@@ -234,14 +240,16 @@ function ItemMap({items}) {
     {Object.keys(items).map(itemCode =>
       <Grid item xs="auto" key={itemCode}>
         <Tooltip title={itemCode}>
-          <Paper sx={{p: 1, pr: 2, pt: 1.5}} elevation={4}>
-            <Badge badgeContent={items[itemCode]} max={999999} color="primary" overlap="circular">
-              <Avatar src={`https://artifactsmmo.com/images/items/${itemCode}.png`} variant="rounded"/>
-            </Badge>
-          </Paper>
+          <a href={`https://artifactsmmo.com/encyclopedia/items/${itemCode}`} target="_blank">
+            <Paper sx={{p: 1, pr: 2, pt: 1.5}} elevation={4}>
+              <Badge badgeContent={items[itemCode]} max={999999} color="primary" overlap="circular">
+                <Avatar src={`https://artifactsmmo.com/images/items/${itemCode}.png`} variant="rounded"/>
+              </Badge>
+            </Paper>
+          </a>
         </Tooltip>
       </Grid>
-    )}
+      )}
   </>
 }
 

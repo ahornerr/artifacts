@@ -29,7 +29,11 @@ type Item struct {
 	// Effects List of object effects. For equipment, it will include item stats.
 	Effects *[]client.ItemEffectSchema
 
-	Stats Stats
+	Stats *Stats
+}
+
+func (i Item) String() string {
+	return i.Name
 }
 
 // TODO: This might be wrong

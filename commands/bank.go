@@ -19,7 +19,7 @@ var (
 	DepositAll = command.NewSimple(
 		"Depositing all in bank",
 		func(ctx context.Context, char *character.Character) error {
-			return char.BankAll(ctx)
+			return char.DepositAll(ctx)
 		},
 	)
 )

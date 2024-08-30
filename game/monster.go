@@ -7,11 +7,15 @@ import (
 type Monster struct {
 	Code    string
 	Name    string
-	Stats   Stats
+	Stats   *Stats
 	Level   int
 	MaxGold int
 	MinGold int
 	Loot    []Drop
+}
+
+func (m Monster) String() string {
+	return m.Name
 }
 
 func (m Monster) GetWeaknesses() []string {

@@ -6,13 +6,15 @@ import (
 
 type Resource struct {
 	Resource *game.Resource
-	Skill    Node
+	Item     *game.Item
+	//Skill    Node
 }
 
-func NewResource(resource *game.Resource) Node {
+func NewResource(resource *game.Resource, item *game.Item) Node {
 	return &Resource{
 		Resource: resource,
-		Skill:    NewSkill(resource.Skill, resource.Level),
+		Item:     item,
+		//Skill:    NewSkill(resource.Skill, resource.Level),
 	}
 }
 
@@ -21,7 +23,8 @@ func (r *Resource) Type() Type {
 }
 
 func (r *Resource) Children() []Node {
-	return []Node{r.Skill}
+	//return []Node{r.Skill}
+	return nil
 }
 
 func (r *Resource) String() string {
