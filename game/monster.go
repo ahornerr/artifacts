@@ -11,7 +11,7 @@ type Monster struct {
 	Level   int
 	MaxGold int
 	MinGold int
-	Loot    []Drop
+	Loot    map[*Item]Drop
 }
 
 func (m Monster) String() string {

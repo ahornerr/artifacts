@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
+	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 )
 
@@ -54,6 +55,9 @@ func EquipBestEquipment(ctx context.Context, char *character.Character, targetSt
 	for slot, item := range upgradesInBank {
 		err := Withdraw(ctx, char, item.Code, 1)
 		if err != nil {
+			if httperror.ErrIsBankItemNotFound(err) {
+				return EquipBestEquipment(ctx, char, targetStats)
+			}
 			return err
 		}
 
@@ -64,6 +68,16 @@ func EquipBestEquipment(ctx context.Context, char *character.Character, targetSt
 	}
 
 	for slot, item := range upgradesInInventory {
+		if needToBank {
+			err := Withdraw(ctx, char, item.Code, 1)
+			if err != nil {
+				if httperror.ErrIsBankItemNotFound(err) {
+					return EquipBestEquipment(ctx, char, targetStats)
+				}
+				return err
+			}
+		}
+
 		err := char.Equip(ctx, client.EquipSchemaSlot(slot), item.Code)
 		if err != nil {
 			return err

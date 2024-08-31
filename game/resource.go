@@ -3,7 +3,7 @@ package game
 type Resource struct {
 	Code  string
 	Name  string
-	Loot  []Drop
+	Loot  map[*Item]Drop
 	Skill string
 	Level int
 }
@@ -13,7 +13,6 @@ func (r Resource) String() string {
 }
 
 type Drop struct {
-	Item        *Item
 	MaxQuantity int
 	MinQuantity int
 	Rate        int

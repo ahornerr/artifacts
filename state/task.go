@@ -47,11 +47,15 @@ func (t *TaskArgs) NumLosses() int {
 
 func Task(stop func(*character.Character, *TaskArgs) bool) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		return Run(ctx, char, TaskLoop, &TaskArgs{
-			Rewards: make(map[string]int),
-			Drops:   make(map[string]int),
-			stop:    stop,
-		})
+		return Run(ctx, char, TaskLoop, NewTaskArgs(stop))
+	}
+}
+
+func NewTaskArgs(stop func(*character.Character, *TaskArgs) bool) *TaskArgs {
+	return &TaskArgs{
+		Rewards: make(map[string]int),
+		Drops:   make(map[string]int),
+		stop:    stop,
 	}
 }
 
@@ -66,7 +70,7 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 
 	// Complete task
 	if char.Task != "" && char.TaskProgress == char.TaskTotal {
-		err := MoveToClosest(ctx, char, game.Maps.GetTaskMasters("monster"))
+		err := MoveToClosest(ctx, char, game.Maps.GetTaskMasters("monsters"))
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +85,7 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 
 	// Get new task
 	if char.Task == "" {
-		err := MoveToClosest(ctx, char, game.Maps.GetTaskMasters("monster"))
+		err := MoveToClosest(ctx, char, game.Maps.GetTaskMasters("monsters"))
 		if err != nil {
 			return nil, err
 		}

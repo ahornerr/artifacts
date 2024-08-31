@@ -32,6 +32,6 @@ type Item struct {
 	Stats *Stats
 }
 
-func (i Item) String() string {
+func (i *Item) String() string {
 	return i.Name
 }

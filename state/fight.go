@@ -56,7 +56,16 @@ func NewFightArgs(monsterCode string, stop func(*character.Character, *FightArgs
 }
 
 func FightLoop(ctx context.Context, char *character.Character, args *FightArgs) (State[*FightArgs], error) {
-	char.PushState("Fighting %s", args.Monster.Name)
+	// Repeat until stop condition
+	if args.stop(char, args) {
+		return nil, nil
+	}
+
+	if args.NumFights() == 0 {
+		char.PushState("Fighting %s", args.Monster.Name)
+	} else {
+		char.PushState("Fighting %s (won %d, lost %d)", args.Monster.Name, args.NumWins(), args.NumLosses())
+	}
 	defer char.PopState()
 
 	// Bank if full
@@ -92,5 +101,5 @@ func FightLoop(ctx context.Context, char *character.Character, args *FightArgs) 
 		args.Drops[drop.Code] += drop.Quantity
 	}
 
-	return nil, err
+	return FightLoop, err
 }

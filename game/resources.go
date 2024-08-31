@@ -52,17 +52,17 @@ func (r *resources) load(ctx context.Context) error {
 				Name:  resourceSchema.Name,
 				Skill: string(resourceSchema.Skill),
 				Level: resourceSchema.Level,
+				Loot:  map[*Item]Drop{},
 			}
 
 			for _, drop := range resourceSchema.Drops {
 				item := Items.Get(drop.Code)
 
-				resource.Loot = append(resource.Loot, Drop{
-					Item:        item,
+				resource.Loot[item] = Drop{
 					MaxQuantity: drop.MaxQuantity,
 					MinQuantity: drop.MinQuantity,
 					Rate:        drop.Rate,
-				})
+				}
 
 				if _, ok := r.drops[item]; !ok {
 					r.drops[item] = []*Resource{}

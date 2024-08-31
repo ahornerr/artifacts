@@ -57,17 +57,17 @@ func (m *monsters) load(ctx context.Context) error {
 				Level:   monsterSchema.Level,
 				MaxGold: monsterSchema.MaxGold,
 				MinGold: monsterSchema.MinGold,
+				Loot:    map[*Item]Drop{},
 			}
 
 			for _, drop := range monsterSchema.Drops {
 				item := Items.Get(drop.Code)
 
-				monster.Loot = append(monster.Loot, Drop{
-					Item:        item,
+				monster.Loot[item] = Drop{
 					MaxQuantity: drop.MaxQuantity,
 					MinQuantity: drop.MinQuantity,
 					Rate:        drop.Rate,
-				})
+				}
 
 				if _, ok := m.drops[item]; !ok {
 					m.drops[item] = []*Monster{}

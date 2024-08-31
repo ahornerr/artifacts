@@ -19,11 +19,15 @@ type CraftingArgs struct {
 
 func Craft(itemCode string, stop func(*character.Character, *CraftingArgs) bool) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		return Run(ctx, char, CraftingLoop, &CraftingArgs{
-			Item:    game.Items.Get(itemCode),
-			Crafted: map[string]int{},
-			stop:    stop,
-		})
+		return Run(ctx, char, CraftingLoop, NewCraftArgs(itemCode, stop))
+	}
+}
+
+func NewCraftArgs(itemCode string, stop func(*character.Character, *CraftingArgs) bool) *CraftingArgs {
+	return &CraftingArgs{
+		Item:    game.Items.Get(itemCode),
+		Crafted: map[string]int{},
+		stop:    stop,
 	}
 }
 
@@ -39,7 +43,11 @@ func CraftingLoop(ctx context.Context, char *character.Character, args *Crafting
 		return nil, nil
 	}
 
-	char.PushState("Crafting %s (made %d)", args.Item.Name, args.Made)
+	if args.Made == 0 {
+		char.PushState("Crafting %s", args.Item.Name)
+	} else {
+		char.PushState("Crafting %s (made %d)", args.Item.Name, args.Made)
+	}
 	defer char.PopState()
 
 	if args.Item.Crafting == nil {

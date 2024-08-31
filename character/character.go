@@ -7,7 +7,6 @@ import (
 	"github.com/ahornerr/artifacts/game"
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
-	"log"
 	"math"
 	"slices"
 	"time"
@@ -59,14 +58,14 @@ func NewCharacter(c *client.ClientWithResponses, bank *bank.Bank, updates chan<-
 
 func (c *Character) PushState(stateFmt string, args ...interface{}) {
 	state := fmt.Sprintf(stateFmt, args...)
-	log.Printf("Pushing %q\n", state)
+	//log.Printf("Pushing %q\n", state)
 	c.State = append(c.State, state)
 	c.updates <- c
 }
 
 func (c *Character) PopState() {
 	if len(c.State) > 0 {
-		log.Printf("Popping %q\n", c.State[len(c.State)-1])
+		//log.Printf("Popping %q\n", c.State[len(c.State)-1])
 		c.State = c.State[:len(c.State)-1]
 		c.updates <- c
 	}
@@ -249,13 +248,17 @@ func (c *Character) Fight(ctx context.Context) (*client.FightSchema, error) {
 	}
 
 	result := &resp.JSON200.Data.Fight
-	if result.Result == client.Win {
-		c.PushState("Fight won")
-		defer c.PopState()
-	} else if result.Result == client.Lose {
-		c.PushState("Fight lost")
-		defer c.PopState()
-	}
+
+	c.PushState(result.Logs[len(result.Logs)-1])
+	defer c.PopState()
+
+	//if result.Result == client.Win {
+	//	c.PushState("Fight won (enemy HP %d)", result.Result)
+	//	defer c.PopState()
+	//} else if result.Result == client.Lose {
+	//	c.PushState("Fight lost")
+	//	defer c.PopState()
+	//}
 
 	c.update(resp.JSON200.Data.Character, true)
 
@@ -477,6 +480,26 @@ func NewEquipmentSet(other *EquipmentSet) *EquipmentSet {
 	return s
 }
 
+func (c *Character) GetEquipmentUpgrades() ([]*game.Item, []*game.Item) {
+	var withinLevel []*game.Item
+	var aboveLevel []*game.Item
+	for _, item := range game.Items.GetAll() {
+		if _, ok := equipmentTypes[item.Type]; !ok {
+			continue
+		}
+		if item.Crafting == nil {
+			continue
+		}
+		if item.Level > c.GetLevel("combat") {
+			aboveLevel = append(aboveLevel, item)
+		} else {
+			withinLevel = append(withinLevel, item)
+		}
+	}
+
+	return withinLevel, aboveLevel
+}
+
 func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet {
 	invBankAndEquipment := map[*game.Item]bool{}
 	for itemCode := range c.bank.Items {
@@ -590,7 +613,9 @@ func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targ
 			delete(set.Equipment, slot)
 			equipmentStats.Remove(item.Stats)
 
-			if turnsToKill < fewestTurnsToKill || (turnsToKill == fewestTurnsToKill && haste > bestHaste) {
+			if turnsToKill < fewestTurnsToKill ||
+				(turnsToKill == fewestTurnsToKill && turnsToDie > mostTurnsToDie) ||
+				(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
 				fewestTurnsToKill = turnsToKill
 				mostTurnsToDie = turnsToDie
 				bestHaste = haste

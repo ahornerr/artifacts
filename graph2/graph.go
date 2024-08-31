@@ -122,13 +122,13 @@ func avgDropPerAction(drops []game.Drop, itemCode string) float64 {
 	// Take the quantity and divide by the average drop per harvest (lower drop rate increases weight).
 	// This also means that higher quantity increases rate too.
 	var avgDrop float64
-	for _, drop := range drops {
-		if drop.Item.Code == itemCode {
-			avgDropQuantity := float64(drop.MinQuantity+drop.MaxQuantity) / 2.0
-			avgDrop = avgDropQuantity * 1 / float64(drop.Rate)
-			break
-		}
-	}
+	//for _, drop := range drops {
+	//if drop.Item.Code == itemCode {
+	//	avgDropQuantity := float64(drop.MinQuantity+drop.MaxQuantity) / 2.0
+	//	avgDrop = avgDropQuantity * 1 / float64(drop.Rate)
+	//	break
+	//}
+	//}
 
 	return avgDrop
 

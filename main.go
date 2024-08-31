@@ -77,6 +77,77 @@ func main() {
 	//}
 
 	characterStates := map[string]state.Runner{
+		"curlyBoy1": state.Loop(
+			state.TaskCrafting(characters),
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumLosses() == 3 {
+					return true
+				}
+				return false
+			}),
+		),
+		"curlyBoy2": state.Loop(
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumLosses() == 3 {
+					return true
+				}
+				return false
+			}),
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy3": state.Loop(
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumLosses() == 3 {
+					return true
+				}
+				return false
+			}),
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy4": state.Loop(
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumLosses() == 3 {
+					return true
+				}
+				return false
+			}),
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+		"curlyBoy5": state.Loop(
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				// We can't seem to win this fight
+				if args.NumFights() >= 3 && args.NumLosses() == 3 {
+					return true
+				}
+				return false
+			}),
+			state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+				return c.IsInventoryFull()
+			}),
+			state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
+				return c.Inventory["iron_ore"] < 8
+			}),
+		),
+
 		//"curlyBoy1": state.Loop(
 		//state.Craft("iron_boots", func(c *character.Character, args *state.CraftingArgs) bool {
 		//	return totalItemQuantity("iron_boots") >= 5
@@ -102,59 +173,47 @@ func main() {
 		//	return args.Drops["feather"] >= 10
 		//}),
 		//),
-		"curlyBoy2": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
-			// We can't seem to win this fight
-			if args.NumFights() >= 3 && args.NumWins() == 0 {
-				return true
-			}
-			return false
-		}),
-		"curlyBoy3": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
-			// We can't seem to win this fight
-			if args.NumFights() >= 3 && args.NumWins() == 0 {
-				return true
-			}
-			return false
-		}),
-		"curlyBoy4": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
-			// We can't seem to win this fight
-			if args.NumFights() >= 3 && args.NumWins() == 0 {
-				return true
-			}
-			return false
-		}),
-		"curlyBoy5": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
-			// We can't seem to win this fight
-			if args.NumFights() >= 3 && args.NumWins() == 0 {
-				return true
-			}
-			return false
-		}),
+		//"curlyBoy2": state.Fight("cow", func(c *character.Character, args *state.FightArgs) bool {
+		//	return args.Drops["cowhide"] >= 30
+		//}),
+		//"curlyBoy3": state.Fight("cow", func(c *character.Character, args *state.FightArgs) bool {
+		//	return args.Drops["cowhide"] >= 30
+		//}),
+		//"curlyBoy4": state.Fight("cow", func(c *character.Character, args *state.FightArgs) bool {
+		//	return args.Drops["cowhide"] >= 30
+		//}),
+		//"curlyBoy5": state.Fight("cow", func(c *character.Character, args *state.FightArgs) bool {
+		//	return args.Drops["cowhide"] >= 30
+		//}),
+		//"curlyBoy2": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+		//	// We can't seem to win this fight
+		//	if args.NumFights() >= 3 && args.NumWins() == 0 {
+		//		return true
+		//	}
+		//	return false
+		//}),
+		//"curlyBoy3": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+		//	// We can't seem to win this fight
+		//	if args.NumFights() >= 3 && args.NumWins() == 0 {
+		//		return true
+		//	}
+		//	return false
+		//}),
+		//"curlyBoy4": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+		//	// We can't seem to win this fight
+		//	if args.NumFights() >= 3 && args.NumWins() == 0 {
+		//		return true
+		//	}
+		//	return false
+		//}),
+		//"curlyBoy5": state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+		//	// We can't seem to win this fight
+		//	if args.NumFights() >= 3 && args.NumWins() == 0 {
+		//		return true
+		//	}
+		//	return false
+		//}),
 		//state.Loop(
-		//	state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
-		//		return c.IsInventoryFull()
-		//	}),
-		//	state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
-		//		return c.Inventory["iron_ore"] < 8
-		//	}),
-		//),
-		//"curlyBoy3": state.Loop(
-		//	state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
-		//		return c.IsInventoryFull()
-		//	}),
-		//	state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
-		//		return c.Inventory["iron_ore"] < 8
-		//	}),
-		//),
-		//"curlyBoy4": state.Loop(
-		//	state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
-		//		return c.IsInventoryFull()
-		//	}),
-		//	state.Craft("iron", func(c *character.Character, args *state.CraftingArgs) bool {
-		//		return c.Inventory["iron_ore"] < 8
-		//	}),
-		//),
-		//"curlyBoy5": state.Loop(
 		//	state.Harvest("iron_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
 		//		return c.IsInventoryFull()
 		//	}),
