@@ -613,9 +613,16 @@ func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targ
 			delete(set.Equipment, slot)
 			equipmentStats.Remove(item.Stats)
 
-			if turnsToKill < fewestTurnsToKill ||
-				(turnsToKill == fewestTurnsToKill && turnsToDie > mostTurnsToDie) ||
-				(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
+			// An item is better than another if it
+			//  - Kills faster than the other item while still keeping us alive
+			//  - Kills the same speed, still keeps us alive, but has a better haste
+
+			//if turnsToKill < fewestTurnsToKill ||
+			//	(turnsToKill == fewestTurnsToKill && turnsToDie > mostTurnsToDie) ||
+			//	(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
+
+			if (turnsToKill < fewestTurnsToKill && turnsToKill < turnsToDie) ||
+				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste > bestHaste) {
 				fewestTurnsToKill = turnsToKill
 				mostTurnsToDie = turnsToDie
 				bestHaste = haste
