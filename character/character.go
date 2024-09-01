@@ -8,9 +8,21 @@ import (
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 	"math"
-	"slices"
 	"time"
 )
+
+var equipmentSlotOrder = []string{
+	"helmet",
+	"amulet",
+	"body_armor",
+	"weapon",
+	"shield",
+	//"ring",
+	"ring1",
+	"ring2",
+	"leg_armor",
+	"boots",
+}
 
 type Character struct {
 	client           *client.ClientWithResponses
@@ -460,8 +472,8 @@ var equipmentTypes = map[string]bool{
 
 type EquipmentSet struct {
 	Equipment          map[string]*game.Item
-	TurnsToKillMonster int
-	TurnsToKillPlayer  int
+	TurnsToKillMonster float64
+	TurnsToKillPlayer  float64
 	Haste              int
 }
 
@@ -514,6 +526,9 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 		}
 	}
 
+	// TODO: Double check this
+	isResource := len(targetStats.Resistance) == 1
+
 	slotsEquipment := map[string][]*game.Item{}
 	for item := range invBankAndEquipment {
 		itemType := item.Type
@@ -524,6 +539,18 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 		if item.Level > c.GetLevel("combat") {
 			continue
 		}
+
+		if isResource && item.SubType != "tool" {
+			continue
+		}
+		if !isResource && item.SubType == "tool" {
+			continue
+		}
+
+		//if _, ok := slotsEquipment[itemType]; !ok {
+		//	slotsEquipment[itemType] = []*game.Item{}
+		//}
+		//slotsEquipment[itemType] = append(slotsEquipment[itemType], item)
 
 		if itemType == "ring" {
 			if _, ok := slotsEquipment["ring1"]; !ok {
@@ -553,76 +580,80 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 	}
 
 	equipmentStats := game.AccumulatedStats(set.Equipment)
-	turnsToKillMonster, turnsToKillPlayer, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, nil)
+	turnsToKillMonster, turnsToKillPlayer, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, equipmentSlotOrder)
 	set.TurnsToKillPlayer = turnsToKillPlayer
 	set.TurnsToKillMonster = turnsToKillMonster
 	set.Haste = haste
+	//if set.Equipment["ring"] != nil {
+	//	set.Equipment["ring1"] = set.Equipment["ring"]
+	//	set.Equipment["ring2"] = set.Equipment["ring"]
+	//	delete(set.Equipment, "ring")
+	//}
 	return set
 }
 
-func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int, slotsEquipment map[string][]*game.Item, ignoreSlots []string) (int, int, int) {
+func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int, slotsEquipment map[string][]*game.Item, slots []string) (float64, float64, int) {
 	fewestTurnsToKill, mostTurnsToDie, bestHaste := calculateTurns(equipmentStats, targetStats, basePlayerHp)
 
 	// Pick a slot. Pick an item. Put an item in the slot. Calculate all other slots
-	for slot, items := range slotsEquipment {
-		if slices.Contains(ignoreSlots, slot) {
-			continue
-		}
+	for _, slot := range slots {
+		newSlots := slots[1:]
+		items := slotsEquipment[slot]
+
+		//fmt.Println(strings.Repeat("  ", len(ignoreSlots)), "Slot:", slot)
+		//fmt.Print(strings.Repeat("  ", len(ignoreSlots)))
 		if len(items) == 0 {
+			//fmt.Println("No items found")
 			continue
 		}
 
-		currentItem := set.Equipment[slot]
+		equippedItem := set.Equipment[slot]
+		var bestItem *game.Item
 
-		// No item equipped. Only one possible item for this slot, it will be the best
-		if currentItem == nil && len(items) == 1 {
-			set.Equipment[slot] = items[0]
-			equipmentStats.Add(items[0].Stats)
-			fewestTurnsToKill, mostTurnsToDie, bestHaste = calculateTurns(equipmentStats, targetStats, basePlayerHp)
-			continue
-		}
+		// First calculate for the equipped item
+		if equippedItem != nil {
+			fewestTurnsToKill, mostTurnsToDie, bestHaste = computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, newSlots)
 
-		// Item equipped and it's the only possible item. Do nothing
-		if currentItem == items[0] && len(items) == 1 {
-			continue
-		}
+			if len(items) == 1 {
+				if items[0] != equippedItem {
+					panic("This should never happen")
+				}
 
-		// This shouldn't be possible as the current item should be included in the possible items
-		if currentItem != items[0] && len(items) == 1 {
-			panic("This shouldn't happen")
-		}
+				continue
+			}
 
-		bestItem := currentItem
-
-		if currentItem != nil {
-			equipmentStats.Remove(currentItem.Stats)
+			bestItem = equippedItem
+			equipmentStats.Remove(equippedItem.Stats)
 			delete(set.Equipment, slot)
 		}
 
 		for _, item := range items {
-			if item == currentItem {
-				// We've already done the math for this item, either at the beginning or in a previous loop
+			if item == equippedItem {
+				// We've already done the math for this item
 				continue
 			}
 
 			set.Equipment[slot] = item
 			equipmentStats.Add(item.Stats)
 
-			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, append(ignoreSlots, slot))
+			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, equipmentStats, targetStats, basePlayerHp, slotsEquipment, newSlots)
 
 			delete(set.Equipment, slot)
 			equipmentStats.Remove(item.Stats)
 
-			// An item is better than another if it
-			//  - Kills faster than the other item while still keeping us alive
-			//  - Kills the same speed, still keeps us alive, but has a better haste
+			// An item is better than another if
+			//  - there's no item already in that slot
+			//  - it kills faster than the other item while still keeping us alive
+			//  - it kills the same speed, still keeps us alive, but has a better haste
 
 			//if turnsToKill < fewestTurnsToKill ||
 			//	(turnsToKill == fewestTurnsToKill && turnsToDie > mostTurnsToDie) ||
 			//	(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
 
-			if (turnsToKill < fewestTurnsToKill && turnsToKill < turnsToDie) ||
-				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste > bestHaste) {
+			if bestItem == nil ||
+				(turnsToKill < fewestTurnsToKill && turnsToKill < turnsToDie) ||
+				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste > bestHaste) ||
+				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste == bestHaste && turnsToDie > mostTurnsToDie) {
 				fewestTurnsToKill = turnsToKill
 				mostTurnsToDie = turnsToDie
 				bestHaste = haste
@@ -633,29 +664,27 @@ func computeBestForRestOfSet(set *EquipmentSet, equipmentStats *game.Stats, targ
 		// bestItem should never be nil theoretically
 		set.Equipment[slot] = bestItem
 		equipmentStats.Add(bestItem.Stats)
+		//fmt.Println(strings.Repeat("  ", len(ignoreSlots)), "Best item:", bestItem.Code)
 	}
 
 	return fewestTurnsToKill, mostTurnsToDie, bestHaste
 }
 
-func calculateTurns(equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int) (int, int, int) {
-	playerAttack := int(equipmentStats.GetDamageAgainst(targetStats))
-	monsterAttack := int(targetStats.GetDamageAgainst(equipmentStats))
+func calculateTurns(equipmentStats *game.Stats, targetStats *game.Stats, basePlayerHp int) (float64, float64, int) {
+	// TODO: For realistic attacks we should floor the values, but for purposes of gear selection we can keep them as floats
+	playerAttack := equipmentStats.GetDamageAgainst(targetStats)
+	monsterAttack := targetStats.GetDamageAgainst(equipmentStats)
 
 	playerHp := equipmentStats.Hp + basePlayerHp
 
-	var turnsToKillMonster int
-	if playerAttack <= 0 {
-		turnsToKillMonster = math.MaxInt32
-	} else {
-		turnsToKillMonster = int(math.Ceil(float64(targetStats.Hp) / float64(playerAttack)))
+	turnsToKillMonster := math.MaxFloat64
+	if playerAttack > 0 {
+		turnsToKillMonster = float64(targetStats.Hp) / playerAttack
 	}
 
-	var turnsToKillPlayer int
-	if monsterAttack <= 0 {
-		turnsToKillPlayer = math.MaxInt32
-	} else {
-		turnsToKillPlayer = int(math.Ceil(float64(playerHp) / float64(monsterAttack)))
+	turnsToKillPlayer := math.MaxFloat64
+	if monsterAttack > 0 {
+		turnsToKillPlayer = float64(playerHp) / monsterAttack
 	}
 
 	return turnsToKillMonster, turnsToKillPlayer, equipmentStats.Haste
