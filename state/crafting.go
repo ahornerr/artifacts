@@ -9,7 +9,9 @@ import (
 )
 
 type CraftingArgs struct {
-	Item    *game.Item
+	Item     *game.Item
+	Quantity int
+
 	Made    int
 	Xp      int
 	Crafted map[string]int
@@ -17,23 +19,29 @@ type CraftingArgs struct {
 	stop func(*character.Character, *CraftingArgs) bool
 }
 
-func Craft(itemCode string, stop func(*character.Character, *CraftingArgs) bool) Runner {
+func Craft(itemCode string, quantity int, stop func(*character.Character, *CraftingArgs) bool) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		return Run(ctx, char, CraftingLoop, NewCraftArgs(itemCode, stop))
+		return Run(ctx, char, CraftingLoop, NewCraftArgs(itemCode, quantity, stop))
 	}
 }
 
-func NewCraftArgs(itemCode string, stop func(*character.Character, *CraftingArgs) bool) *CraftingArgs {
+func NewCraftArgs(itemCode string, quantity int, stop func(*character.Character, *CraftingArgs) bool) *CraftingArgs {
 	return &CraftingArgs{
-		Item:    game.Items.Get(itemCode),
-		Crafted: map[string]int{},
-		stop:    stop,
+		Item:     game.Items.Get(itemCode),
+		Quantity: quantity,
+		Crafted:  map[string]int{},
+		stop:     stop,
 	}
 }
 
 func CraftingLoop(ctx context.Context, char *character.Character, args *CraftingArgs) (State[*CraftingArgs], error) {
+	need := args.Quantity
+	if need <= 0 {
+		need = math.MaxInt32
+	}
+
 	// Check stop condition
-	if args.stop(char, args) {
+	if args.Made >= need || (args.stop != nil && args.stop(char, args)) {
 		if len(char.Inventory) > 0 {
 			err := MoveToBankAndDepositAll(ctx, char)
 			if err != nil {
@@ -59,22 +67,26 @@ func CraftingLoop(ctx context.Context, char *character.Character, args *Crafting
 	totalCraftable, inventoryCraftable := getNumCanCraft(args.Item.Crafting, char.Inventory, char.Bank())
 	toWithdraw := map[string]int{}
 
+	numToCraft := 0
 	switch {
 	case totalCraftable == 0:
 		// We ran out of crafting materials
 		return nil, nil
 	case inventoryCraftable == totalCraftable:
 		// Nothing in the bank worth withdrawing
+		numToCraft = inventoryCraftable
 	case inventoryCraftable > 0:
 		// If we have some items to craft in our inventory already, just do it
+		numToCraft = inventoryCraftable
 	default:
 		// Figure out what we need to withdraw from the bank to get a full inventory,
 		// unless the bank doesn't have a full inventory's worth we just withdraw what we can.
 		maxInventorySizeCanCraft := char.MaxInventoryItems() / args.Item.Crafting.InventoryRequired()
-		withdrawMultiplier := min(maxInventorySizeCanCraft, totalCraftable)
+		withdrawMultiplier := min(maxInventorySizeCanCraft, totalCraftable, need)
 		for craftingItem, quantity := range args.Item.Crafting.Items {
 			toWithdraw[craftingItem.Code] = withdrawMultiplier * quantity
 		}
+		numToCraft = withdrawMultiplier
 	}
 
 	if len(toWithdraw) > 0 {
@@ -95,12 +107,12 @@ func CraftingLoop(ctx context.Context, char *character.Character, args *Crafting
 	}
 
 	// Craft one item
-	result, err := char.Craft(ctx, args.Item.Code, 1)
+	result, err := char.Craft(ctx, args.Item.Code, numToCraft)
 	if err != nil {
 		return nil, err
 	}
 
-	args.Made++
+	args.Made += numToCraft
 	args.Xp += result.Xp
 	for _, drop := range result.Items {
 		args.Crafted[drop.Code] += drop.Quantity

@@ -53,12 +53,17 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 			fmt.Println("Found multiple resources for item", item.Code)
 		}
 		resource := resources[0]
-		char.PushState("Drop rate 1/%d", resource.Loot[item].Rate)
+		rate := resource.Loot[item].Rate
+		if rate != 1 {
+			char.PushState("Drop rate 1/%d", rate)
+		}
 		runner := Harvest(resource.Code, func(c *character.Character, args *HarvestArgs) bool {
 			return args.Drops[item.Code] >= need
 		})
 		err := runner(ctx, char)
-		char.PopState()
+		if rate != 1 {
+			char.PopState()
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +76,10 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 			fmt.Println("Found multiple monsters for item", item.Code)
 		}
 		monster := monsters[0]
-		char.PushState("Drop rate 1/%d", monster.Loot[item].Rate)
+		rate := monster.Loot[item].Rate
+		if rate != 1 {
+			char.PushState("Drop rate 1/%d", rate)
+		}
 		fightArgs := NewFightArgs(monster.Code, func(c *character.Character, args *FightArgs) bool {
 			// Bail out if we lose the first 3 fights
 			if args.NumFights() == 3 && args.NumLosses() == 3 {
@@ -80,7 +88,9 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 			return args.Drops[item.Code] >= need
 		})
 		err := Run(ctx, char, FightLoop, fightArgs)
-		char.PopState()
+		if rate != 1 {
+			char.PopState()
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -91,15 +101,13 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 
 	if item.Crafting != nil {
 		for reqItem, reqQuantity := range item.Crafting.Items {
-			err := CollectItems(reqItem, reqQuantity)(ctx, char)
+			err := CollectItems(reqItem, reqQuantity*need)(ctx, char)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		runner := Craft(item.Code, func(c *character.Character, args *CraftingArgs) bool {
-			return args.Made >= need
-		})
+		runner := Craft(item.Code, need, nil)
 		err := runner(ctx, char)
 		if err != nil {
 			return nil, err

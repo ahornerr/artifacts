@@ -5,6 +5,7 @@ import (
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
+	"reflect"
 )
 
 type FightArgs struct {
@@ -14,7 +15,8 @@ type FightArgs struct {
 	Xp      int
 	Results []client.FightSchemaResult
 
-	stop func(*character.Character, *FightArgs) bool
+	lastBank map[string]int
+	stop     func(*character.Character, *FightArgs) bool
 }
 
 func (t *FightArgs) NumFights() int {
@@ -77,13 +79,16 @@ func FightLoop(ctx context.Context, char *character.Character, args *FightArgs) 
 	}
 
 	// Equip best equipment
-	err := EquipBestEquipment(ctx, char, args.Monster.Stats)
-	if err != nil {
-		return nil, err
+	if !reflect.DeepEqual(args.lastBank, char.Bank()) {
+		err := EquipBestEquipment(ctx, char, args.Monster.Stats)
+		if err != nil {
+			return nil, err
+		}
+		args.lastBank = char.Bank()
 	}
 
 	// Move to the closest monster
-	err = MoveToClosest(ctx, char, game.Maps.GetMonsters(args.Monster.Code))
+	err := MoveToClosest(ctx, char, game.Maps.GetMonsters(args.Monster.Code))
 	if err != nil {
 		return nil, err
 	}

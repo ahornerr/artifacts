@@ -52,9 +52,16 @@ func HarvestLoop(ctx context.Context, char *character.Character, args *HarvestAr
 
 	// Equip best equipment
 	skillStats := &game.Stats{
-		Resistance: map[string]int{
-			args.Resource.Skill: -math.MaxInt32,
-		},
+		IsResource: true,
+		Hp:         math.MaxUint16,
+	}
+	switch args.Resource.Skill {
+	case "woodcutting":
+		skillStats.ResistWoodcutting = math.MinInt8
+	case "mining":
+		skillStats.ResistMining = math.MinInt8
+	case "fishing":
+		skillStats.ResistFishing = math.MinInt8
 	}
 	err := EquipBestEquipment(ctx, char, skillStats)
 	if err != nil {

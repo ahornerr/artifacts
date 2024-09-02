@@ -5,6 +5,7 @@ import (
 	"github.com/ahornerr/artifacts/bank"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/client"
+	"github.com/ahornerr/artifacts/game"
 	"github.com/ahornerr/artifacts/state"
 	"log"
 	"os"
@@ -77,16 +78,42 @@ func main() {
 	//}
 
 	characterStates := map[string]state.Runner{
-		"curlyBoy1": state.Loop(
-			//state.TaskCrafting(characters),
-			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
-				// We can't seem to win this fight
-				if args.NumFights() >= 3 && args.NumLosses() == 3 {
-					return true
-				}
-				return false
-			}),
-		),
+		//"curlyBoy1": state.CollectItems(game.Items.Get("iron_dagger"), 69),
+		"curlyBoy1": state.CollectItems(game.Items.Get("copper_ring"), 50),
+		"curlyBoy2": state.Harvest("copper_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+			return false
+		}),
+		"curlyBoy3": state.Harvest("copper_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+			return false
+		}),
+		"curlyBoy4": state.Harvest("copper_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+			return false
+		}),
+		"curlyBoy5": state.Harvest("copper_rocks", func(c *character.Character, args *state.HarvestArgs) bool {
+			return false
+		}),
+		//"curlyBoy2": state.Fight("chicken", func(c *character.Character, args *state.FightArgs) bool {
+		//	return false
+		//}),
+		//"curlyBoy3": state.Fight("chicken", func(c *character.Character, args *state.FightArgs) bool {
+		//	return false
+		//}),
+		//"curlyBoy4": state.Fight("chicken", func(c *character.Character, args *state.FightArgs) bool {
+		//	return false
+		//}),
+		//"curlyBoy5": state.Fight("chicken", func(c *character.Character, args *state.FightArgs) bool {
+		//	return false
+		//}),
+		//"curlyBoy1": state.Loop(
+		//	//state.TaskCrafting(characters),
+		//	state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+		//		// We can't seem to win this fight
+		//		if args.NumFights() >= 3 && args.NumLosses() == 3 {
+		//			return true
+		//		}
+		//		return false
+		//	}),
+		//),
 		//"curlyBoy2": state.Loop(
 		//	state.Task(func(c *character.Character, args *state.TaskArgs) bool {
 		//		// We can't seem to win this fight

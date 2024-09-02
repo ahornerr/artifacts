@@ -55,10 +55,10 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 
 			hp := b.Stats.Hp - a.Stats.Hp
 			if hp != 0 {
-				return hp
+				return int(hp)
 			}
 
-			return b.Stats.Haste - b.Stats.Haste
+			return int(b.Stats.Haste - b.Stats.Haste)
 		})
 
 		slices.SortFunc(resistUpgrades, func(a, b *game.Item) int {
@@ -69,10 +69,10 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 
 			hp := b.Stats.Hp - a.Stats.Hp
 			if hp != 0 {
-				return hp
+				return int(hp)
 			}
 
-			return b.Stats.Haste - b.Stats.Haste
+			return int(b.Stats.Haste - b.Stats.Haste)
 		})
 
 		//possibleUpgradesFor := map[*game.Item][]*game.Item{}
@@ -137,9 +137,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 			continue
 		}
 
-		craftingArgs := NewCraftArgs(item.Code, func(c *character.Character, args *CraftingArgs) bool {
-			return args.Made >= quantity
-		})
+		craftingArgs := NewCraftArgs(item.Code, quantity, nil)
 		err := Run(ctx, char, CraftingLoop, craftingArgs)
 		if err != nil {
 			return nil, err
@@ -170,9 +168,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 	}
 
 	for item, quantity := range toCraft {
-		runner := Craft(item.Code, func(c *character.Character, args *CraftingArgs) bool {
-			return args.Made >= quantity
-		})
+		runner := Craft(item.Code, quantity, nil)
 		err := runner(ctx, char)
 		if err != nil {
 			return nil, err

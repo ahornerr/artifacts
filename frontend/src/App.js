@@ -193,7 +193,7 @@ function Character({char}) {
           </Grid>
         </AccordionDetails>
       </Accordion>
-      <Accordion>
+      <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
           <Typography sx={{width: '40%', flexShrink: 0}}>
             Inventory
@@ -208,7 +208,7 @@ function Character({char}) {
           </Grid>
         </AccordionDetails>
       </Accordion>
-      <Accordion>
+      <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
           Equipment
         </AccordionSummary>
