@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
@@ -102,6 +103,9 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 	})
 	err := Run(ctx, char, FightLoop, fightArgs)
 	if err != nil {
+		if errors.Is(err, ErrFightUnwinnable) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

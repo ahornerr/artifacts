@@ -531,7 +531,7 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 		if _, ok := equipmentTypes[itemType]; !ok {
 			continue
 		}
-		// TODO: Exclude items that are too low level/never going to be the best
+
 		if item.Level > c.GetLevel("combat") {
 			continue
 		}
@@ -540,10 +540,7 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 			continue
 		}
 
-		//if _, ok := slotsEquipment[itemType]; !ok {
-		//	slotsEquipment[itemType] = []*game.Item{}
-		//}
-		//slotsEquipment[itemType] = append(slotsEquipment[itemType], item)
+		// TODO: Exclude items that are too low level/never going to be the best
 
 		if itemType == "ring" {
 			if _, ok := slotsEquipment["ring1"]; !ok {
@@ -570,6 +567,24 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 		if itemCode != "" {
 			set.Equipment[slot] = game.Items.Get(itemCode)
 		}
+	}
+
+	for _, slot := range equipmentSlotOrder {
+		var newItems []*game.Item
+		items := slotsEquipment[slot]
+
+		highestLevel := 0
+		for _, item := range items {
+			if item.Level > highestLevel {
+				highestLevel = item.Level
+			}
+		}
+		for _, item := range items {
+			if item.Level >= highestLevel-5 {
+				newItems = append(newItems, item)
+			}
+		}
+		slotsEquipment[slot] = newItems
 	}
 
 	var slots []string
@@ -600,36 +615,23 @@ func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePla
 
 	// Pick a slot. Pick an item. Put an item in the slot. Calculate all other slots
 	for _, slot := range slots {
-		newSlots := slots[1:]
 		items := slotsEquipment[slot]
-
 		if len(items) == 0 {
 			continue
 		}
 
-		equippedItem := set.Equipment[slot]
-		var bestItem *game.Item
-
-		if equippedItem != nil {
-			bestItem = equippedItem
-		}
+		newSlots := slots[1:]
+		bestItem := set.Equipment[slot]
 
 		for _, item := range items {
-			set.Equipment[slot] = item //equipmentStats.Add(item.Stats)
-
+			set.Equipment[slot] = item
 			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, targetStats, basePlayerHp, slotsEquipment, newSlots)
 
-			// An item is better than another if
-			//  - there's no item already in that slot
-			//  - it kills faster than the other item while still keeping us alive
-			//  - it kills the same speed, still keeps us alive, but has a better haste
-
 			if bestItem == nil ||
-				(turnsToKill < fewestTurnsToKill && turnsToKill < turnsToDie) ||
-				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste > bestHaste) ||
-				(turnsToKill == fewestTurnsToKill && turnsToKill < turnsToDie && haste == bestHaste && turnsToDie > mostTurnsToDie) {
+				(turnsToKill+0.0001 < fewestTurnsToKill) ||
+				(turnsToKill == fewestTurnsToKill && turnsToDie-0.0001 > mostTurnsToDie) ||
+				(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
 
-				//if bestItem == nil || turnsToKill < fewestTurnsToKill {
 				fewestTurnsToKill = turnsToKill
 				mostTurnsToDie = turnsToDie
 				bestHaste = haste
@@ -637,7 +639,6 @@ func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePla
 			}
 		}
 
-		// bestItem should never be nil theoretically
 		set.Equipment[slot] = bestItem
 	}
 

@@ -110,11 +110,6 @@ function LinearProgressWithLabel(props) {
       <Box sx={{width: '100%', mr: 1, flexGrow: 1}}>
         <BorderLinearProgress variant="determinate" {...props} />
       </Box>
-      <Box sx={{minWidth: 35}}>
-        <Typography variant="body2" color="text.secondary">{`${Math.round(
-          props.value,
-        )}%`}</Typography>
-      </Box>
     </Box>
   );
 }
@@ -185,8 +180,8 @@ function Character({char}) {
             {skills.map(skill =>
               <Grid item xs={6} lg={12} xl={6} sm={12} key={skill}>
                 <Box py={0} mb={1}>
-                  <Typography textTransform="capitalize">{char.Levels[skill]} {skill}</Typography>
-                  <LinearProgressWithLabel variant="determinate" value={char.Xp[skill] / char.MaxXp[skill] * 100}/>
+                  <Typography textTransform="capitalize">{char.Levels[skill]} {skill} ({Math.round(char.Xp[skill] / char.MaxXp[skill] * 100)}%)</Typography>
+                  <LinearProgressWithLabel variant="determinate"/>
                 </Box>
               </Grid>
             )}

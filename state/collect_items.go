@@ -8,14 +8,16 @@ import (
 )
 
 type CollectItemsArgs struct {
-	Item     *game.Item
-	Quantity int
+	Item                              *game.Item
+	Quantity                          int
+	includeAllInventoriesAndEquipment bool
+	characters                        map[string]*character.Character
 }
 
 // CollectItems collects the materials required to craft the item in the desired quantity
-func CollectItems(item *game.Item, quantity int) Runner {
+func CollectItems(item *game.Item, quantity int, includeAllInventoriesAndEquipment bool, characters map[string]*character.Character) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		err := Run(ctx, char, CollectItemsLoop, NewCollectItemsArgs(item, quantity))
+		err := Run(ctx, char, CollectItemsLoop, NewCollectItemsArgs(item, quantity, includeAllInventoriesAndEquipment, characters))
 		if err != nil {
 			return CollectErr{
 				Item: item,
@@ -26,18 +28,34 @@ func CollectItems(item *game.Item, quantity int) Runner {
 	}
 }
 
-func NewCollectItemsArgs(item *game.Item, quantity int) *CollectItemsArgs {
+func NewCollectItemsArgs(item *game.Item, quantity int, includeAllInventoriesAndEquipment bool, characters map[string]*character.Character) *CollectItemsArgs {
 	return &CollectItemsArgs{
-		Item:     item,
-		Quantity: quantity,
+		Item:                              item,
+		Quantity:                          quantity,
+		includeAllInventoriesAndEquipment: includeAllInventoriesAndEquipment,
+		characters:                        characters,
 	}
 }
 
 func CollectItemsLoop(ctx context.Context, char *character.Character, args *CollectItemsArgs) (State[*CollectItemsArgs], error) {
 	item := args.Item
+	quantity := args.Quantity
 
-	have := char.Bank()[item.Code] + char.Inventory[item.Code]
-	need := args.Quantity - have
+	have := char.Bank()[item.Code]
+	if args.includeAllInventoriesAndEquipment {
+		for _, char := range args.characters {
+			have += char.Inventory[item.Code]
+
+			for _, equipItemCode := range char.Equipment {
+				if equipItemCode == item.Code {
+					have++
+				}
+			}
+		}
+	} else {
+		have += char.Inventory[item.Code]
+	}
+	need := quantity - have
 	if need <= 0 {
 		return nil, nil
 	}
@@ -58,7 +76,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 			char.PushState("Drop rate 1/%d", rate)
 		}
 		runner := Harvest(resource.Code, func(c *character.Character, args *HarvestArgs) bool {
-			return args.Drops[item.Code] >= need
+			return char.Bank()[item.Code]+char.Inventory[item.Code] >= quantity
 		})
 		err := runner(ctx, char)
 		if rate != 1 {
@@ -85,7 +103,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 			if args.NumFights() == 3 && args.NumLosses() == 3 {
 				return true
 			}
-			return args.Drops[item.Code] >= need
+			return char.Bank()[item.Code]+char.Inventory[item.Code] >= quantity
 		})
 		err := Run(ctx, char, FightLoop, fightArgs)
 		if rate != 1 {
@@ -101,7 +119,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 
 	if item.Crafting != nil {
 		for reqItem, reqQuantity := range item.Crafting.Items {
-			err := CollectItems(reqItem, reqQuantity*need)(ctx, char)
+			err := CollectItems(reqItem, reqQuantity*need, false, args.characters)(ctx, char)
 			if err != nil {
 				return nil, err
 			}

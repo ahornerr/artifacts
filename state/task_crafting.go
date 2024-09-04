@@ -157,7 +157,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 	}
 
 	for item, quantity := range craftingMaterials {
-		err := CollectItems(item, quantity)(ctx, char)
+		err := CollectItems(item, quantity, false, args.characters)(ctx, char)
 		if err != nil {
 			var fightErr FightErr
 			if errors.As(err, &fightErr) {

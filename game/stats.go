@@ -35,7 +35,6 @@ type Stats struct {
 	DamageEarth int8
 	DamageAir   int8
 
-	IsTool     bool
 	IsResource bool
 
 	// TODO: BoostDamage for each element
@@ -97,34 +96,6 @@ func AccumulatedStatsItemCodes(itemCodes map[string]string) *Stats {
 func (s Stats) GetDamageAgainst(other *Stats) float64 {
 	totalDamage := 0.0
 
-	if s.AttackAir > 0 {
-		totalDamage += float64(s.AttackAir) *
-			(1 + float64(s.DamageAir)/100.0) *
-			(1 - float64(other.ResistAir)/100.0) *
-			(1 - float64(other.ResistAir)/1000.0)
-	}
-
-	if s.AttackFire > 0 {
-		totalDamage += float64(s.AttackFire) *
-			(1 + float64(s.DamageFire)/100.0) *
-			(1 - float64(other.ResistFire)/100.0) *
-			(1 - float64(other.ResistFire)/1000.0)
-	}
-
-	if s.AttackWater > 0 {
-		totalDamage += float64(s.AttackWater) *
-			(1 + float64(s.DamageWater)/100.0) *
-			(1 - float64(other.ResistWater)/100.0) *
-			(1 - float64(other.ResistWater)/1000.0)
-	}
-
-	if s.AttackEarth > 0 {
-		totalDamage += float64(s.AttackEarth) *
-			(1 + float64(s.DamageEarth)/100.0) *
-			(1 - float64(other.ResistEarth)/100.0) *
-			(1 - float64(other.ResistEarth)/1000.0)
-	}
-
 	if other.IsResource {
 		if s.AttackWoodcutting > 0 && other.ResistWoodcutting < 0 {
 			totalDamage += float64(s.AttackWoodcutting) *
@@ -142,6 +113,34 @@ func (s Stats) GetDamageAgainst(other *Stats) float64 {
 			totalDamage += float64(s.AttackFishing) *
 				(1 - float64(other.ResistFishing)/100.0) *
 				(1 - float64(other.ResistFishing)/1000.0)
+		}
+	} else {
+		if s.AttackAir > 0 {
+			totalDamage += float64(s.AttackAir) *
+				(1 + float64(s.DamageAir)/100.0) *
+				(1 - float64(other.ResistAir)/100.0) *
+				(1 - float64(other.ResistAir)/1000.0)
+		}
+
+		if s.AttackFire > 0 {
+			totalDamage += float64(s.AttackFire) *
+				(1 + float64(s.DamageFire)/100.0) *
+				(1 - float64(other.ResistFire)/100.0) *
+				(1 - float64(other.ResistFire)/1000.0)
+		}
+
+		if s.AttackWater > 0 {
+			totalDamage += float64(s.AttackWater) *
+				(1 + float64(s.DamageWater)/100.0) *
+				(1 - float64(other.ResistWater)/100.0) *
+				(1 - float64(other.ResistWater)/1000.0)
+		}
+
+		if s.AttackEarth > 0 {
+			totalDamage += float64(s.AttackEarth) *
+				(1 + float64(s.DamageEarth)/100.0) *
+				(1 - float64(other.ResistEarth)/100.0) *
+				(1 - float64(other.ResistEarth)/1000.0)
 		}
 	}
 
@@ -186,13 +185,10 @@ func StatsFromItem(itemSchema client.ItemSchema) *Stats {
 		case effect.Name == "woodcutting":
 			// Value is an integer that reduces cooldown time by Value%
 			stats.AttackWoodcutting = int8(-effect.Value)
-			stats.IsTool = true
 		case effect.Name == "fishing":
 			stats.AttackFishing = int8(-effect.Value)
-			stats.IsTool = true
 		case effect.Name == "mining":
 			stats.AttackMining = int8(-effect.Value)
-			stats.IsTool = true
 		case strings.HasPrefix(effect.Name, "dmg_"):
 			element := strings.TrimPrefix(effect.Name, "dmg_")
 			switch element {

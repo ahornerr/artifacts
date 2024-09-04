@@ -28,6 +28,7 @@ func marshalEvent(event Event) (byteArray []byte, err error) {
 
 func httpServer(events <-chan Event, onNewClient func()) *fiber.App {
 	app := fiber.New()
+	//app.Use(pprof.New())
 
 	newClient := make(chan chan []byte)
 	deleteClient := make(chan chan []byte)

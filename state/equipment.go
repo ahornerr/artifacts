@@ -2,14 +2,20 @@ package state
 
 import (
 	"context"
+	"errors"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 )
 
+var ErrFightUnwinnable = errors.New("fight unwinnable with current equipment")
+
 func EquipBestEquipment(ctx context.Context, char *character.Character, targetStats *game.Stats) error {
 	bestEquipment := char.GetBestOwnedEquipment(targetStats)
+	if bestEquipment.TurnsToKillMonster > bestEquipment.TurnsToKillPlayer {
+		return ErrFightUnwinnable
+	}
 
 	upgradesInInventory := map[string]*game.Item{}
 	upgradesInBank := map[string]*game.Item{}
