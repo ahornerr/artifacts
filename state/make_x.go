@@ -32,7 +32,7 @@ func MakeX(itemCode string, quantity int, recycle bool, stop func(character *cha
 }
 
 func MakeXLoop(ctx context.Context, char *character.Character, args *MakeXArgs) (State[*MakeXArgs], error) {
-	if args.stop == nil && args.stop(char, args) {
+	if args.stop != nil && args.stop(char, args) {
 		return nil, nil
 	}
 
