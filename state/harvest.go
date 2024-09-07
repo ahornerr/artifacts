@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
+	"log"
 	"math"
 	"strings"
 )
@@ -31,6 +32,11 @@ func Harvest(resourceCode string, stop func(*character.Character, *HarvestArgs) 
 func HarvestLoop(ctx context.Context, char *character.Character, args *HarvestArgs) (State[*HarvestArgs], error) {
 	// Repeat until stop condition
 	if args.stop(char, args) {
+		return nil, nil
+	}
+
+	if char.GetLevel(args.Resource.Skill) < args.Resource.Level {
+		log.Println(char.Name, args.Resource.Skill, "too low level to harvest")
 		return nil, nil
 	}
 

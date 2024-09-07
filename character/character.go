@@ -458,6 +458,26 @@ func (c *Character) Equip(ctx context.Context, slot client.EquipSchemaSlot, item
 	return nil
 }
 
+func (c *Character) Recycle(ctx context.Context, itemCode string, quantity int) (*client.RecyclingItemsSchema, error) {
+	c.PushState("Recycling %d %s", quantity, itemCode)
+	defer c.PopState()
+
+	resp, err := c.client.ActionRecyclingMyNameActionRecyclingPostWithResponse(ctx, c.Name, client.ActionRecyclingMyNameActionRecyclingPostJSONRequestBody{
+		Code:     itemCode,
+		Quantity: &quantity,
+	})
+
+	if err != nil {
+		return nil, err
+	} else if resp.JSON200 == nil {
+		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
+	}
+
+	c.update(resp.JSON200.Data.Character, true)
+
+	return &resp.JSON200.Data.Details, nil
+}
+
 var equipmentTypes = map[string]bool{
 	"amulet":     true,
 	"body_armor": true,

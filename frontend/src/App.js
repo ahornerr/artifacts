@@ -135,7 +135,7 @@ function Character({char}) {
       const newProgress = diffSeconds / char.CooldownDuration * 100
 
       setCooldownProgress(newProgress)
-    }, 400)
+    }, 500)
 
     return () => {
       clearInterval(timer)
@@ -180,8 +180,10 @@ function Character({char}) {
             {skills.map(skill =>
               <Grid item xs={6} lg={12} xl={6} sm={12} key={skill}>
                 <Box py={0} mb={1}>
-                  <Typography textTransform="capitalize">{char.Levels[skill]} {skill} ({Math.round(char.Xp[skill] / char.MaxXp[skill] * 100)}%)</Typography>
-                  <LinearProgressWithLabel variant="determinate"/>
+                  <Typography
+                    textTransform="capitalize">{char.Levels[skill]} {skill} ({Math.round(char.Xp[skill] / char.MaxXp[skill] * 100)}%)</Typography>
+                  <LinearProgressWithLabel variant="determinate"
+                                           value={Math.round(char.Xp[skill] / char.MaxXp[skill] * 100)}/>
                 </Box>
               </Grid>
             )}
@@ -214,8 +216,7 @@ function Character({char}) {
                 <Tooltip title={char.Equipment[slot]}>
                   <a href={`https://artifactsmmo.com/encyclopedia/items/${char.Equipment[slot]}`} target="_blank">
                     <Paper sx={{p: 1, pt: 1.5}} elevation={4}>
-                      <Avatar src={`https://artifactsmmo.com/images/items/${char.Equipment[slot]}.png`}
-                              variant="rounded">
+                      <Avatar src={getEquipmentIconUrl(char.Equipment, slot)} variant="rounded">
                         {slot}
                       </Avatar>
                     </Paper>
@@ -244,8 +245,48 @@ function ItemMap({items}) {
           </a>
         </Tooltip>
       </Grid>
-      )}
+    )}
   </>
+}
+
+function getEquipmentIconUrl(equipment, slot) {
+  const item = equipment[slot]
+  if (!!item) {
+    return `https://artifactsmmo.com/images/items/${item}.png`
+  }
+
+  let osrsSlot = ""
+  switch (slot) {
+    case "weapon":
+      osrsSlot = "Weapon_slot"
+      break
+    case "helmet":
+      osrsSlot = "Head_slot"
+      break
+    case "amulet":
+      osrsSlot = "Neck_slot"
+      break
+    case "body_armor":
+      osrsSlot = "Body_slot"
+      break
+    case "shield":
+      osrsSlot = "Shield_slot"
+      break
+    case "ring1":
+      osrsSlot = "Ring_slot"
+      break
+    case "ring2":
+      osrsSlot = "Ring_slot"
+      break
+    case "leg_armor":
+      osrsSlot = "Legs_slot"
+      break
+    case "boots":
+      osrsSlot = "Feet_slot"
+      break
+  }
+
+  return `https://oldschool.runescape.wiki/images/${osrsSlot}.png`
 }
 
 export default App;

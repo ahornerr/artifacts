@@ -137,7 +137,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 			continue
 		}
 
-		craftingArgs := NewCraftArgs(item.Code, quantity, nil)
+		craftingArgs := NewCraftArgs(item.Code, quantity, false, nil)
 		err := Run(ctx, char, CraftingLoop, craftingArgs)
 		if err != nil {
 			return nil, err
@@ -157,7 +157,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 	}
 
 	for item, quantity := range craftingMaterials {
-		err := CollectItems(item, quantity, false, args.characters)(ctx, char)
+		err := CollectItems(item.Code, quantity, true, false, args.characters)(ctx, char)
 		if err != nil {
 			var fightErr FightErr
 			if errors.As(err, &fightErr) {
@@ -168,7 +168,7 @@ func TaskCraftingLoop(ctx context.Context, char *character.Character, args *Task
 	}
 
 	for item, quantity := range toCraft {
-		runner := Craft(item.Code, quantity, nil)
+		runner := Craft(item.Code, quantity, true, nil)
 		err := runner(ctx, char)
 		if err != nil {
 			return nil, err

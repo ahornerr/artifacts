@@ -5,6 +5,7 @@ import (
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
+	"log"
 	"reflect"
 )
 
@@ -82,7 +83,8 @@ func FightLoop(ctx context.Context, char *character.Character, args *FightArgs) 
 	if !reflect.DeepEqual(args.lastBank, char.Bank()) {
 		err := EquipBestEquipment(ctx, char, args.Monster.Stats)
 		if err != nil {
-			return nil, err
+			log.Println(char.Name, err)
+			return nil, nil
 		}
 		args.lastBank = char.Bank()
 	}

@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
+	"log"
 	"math"
 )
 
 type CraftingArgs struct {
-	Item     *game.Item
-	Quantity int
+	Item         *game.Item
+	Quantity     int
+	BankWhenDone bool
 
 	Made    int
 	Xp      int
@@ -19,22 +21,28 @@ type CraftingArgs struct {
 	stop func(*character.Character, *CraftingArgs) bool
 }
 
-func Craft(itemCode string, quantity int, stop func(*character.Character, *CraftingArgs) bool) Runner {
+func Craft(itemCode string, quantity int, bankWhenDone bool, stop func(*character.Character, *CraftingArgs) bool) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		return Run(ctx, char, CraftingLoop, NewCraftArgs(itemCode, quantity, stop))
+		return Run(ctx, char, CraftingLoop, NewCraftArgs(itemCode, quantity, bankWhenDone, stop))
 	}
 }
 
-func NewCraftArgs(itemCode string, quantity int, stop func(*character.Character, *CraftingArgs) bool) *CraftingArgs {
+func NewCraftArgs(itemCode string, quantity int, bankWhenDone bool, stop func(*character.Character, *CraftingArgs) bool) *CraftingArgs {
 	return &CraftingArgs{
-		Item:     game.Items.Get(itemCode),
-		Quantity: quantity,
-		Crafted:  map[string]int{},
-		stop:     stop,
+		Item:         game.Items.Get(itemCode),
+		Quantity:     quantity,
+		BankWhenDone: bankWhenDone,
+		Crafted:      map[string]int{},
+		stop:         stop,
 	}
 }
 
 func CraftingLoop(ctx context.Context, char *character.Character, args *CraftingArgs) (State[*CraftingArgs], error) {
+	if char.GetLevel(args.Item.Crafting.Skill) < args.Item.Crafting.Level {
+		log.Println(char.Name, args.Item.Crafting.Skill, "too low level to craft")
+		return nil, nil
+	}
+
 	need := args.Quantity
 	if need <= 0 {
 		need = math.MaxInt32
@@ -42,7 +50,7 @@ func CraftingLoop(ctx context.Context, char *character.Character, args *Crafting
 
 	// Check stop condition
 	if args.Made >= need || (args.stop != nil && args.stop(char, args)) {
-		if len(char.Inventory) > 0 {
+		if args.BankWhenDone && len(char.Inventory) > 0 {
 			err := MoveToBankAndDepositAll(ctx, char)
 			if err != nil {
 				return nil, err

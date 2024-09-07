@@ -26,17 +26,6 @@ func Run[T any](ctx context.Context, char *character.Character, start State[T], 
 
 type Runner func(ctx context.Context, char *character.Character) error
 
-//func Sequence(runners ...Runner) Runner {
-//	return func(ctx context.Context, char *character.Character) error {
-//		for _, runner := range runners {
-//			if err := runner(ctx, char); err != nil {
-//				return err
-//			}
-//		}
-//		return nil
-//	}
-//}
-
 func Loop(runners ...Runner) Runner {
 	return func(ctx context.Context, char *character.Character) error {
 		for {

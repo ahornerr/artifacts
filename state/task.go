@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"errors"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
@@ -62,7 +61,7 @@ func NewTaskArgs(stop func(*character.Character, *TaskArgs) bool) *TaskArgs {
 
 func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (State[*TaskArgs], error) {
 	// Repeat until stop condition
-	if args.stop(char, args) {
+	if args.stop != nil && args.stop(char, args) {
 		return nil, nil
 	}
 
@@ -103,10 +102,11 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 	})
 	err := Run(ctx, char, FightLoop, fightArgs)
 	if err != nil {
-		if errors.Is(err, ErrFightUnwinnable) {
-			return nil, nil
-		}
 		return nil, err
+	}
+	if fightArgs.NumFights() == 0 {
+		// Didn't attempt to fight, must be unwinnable
+		return nil, nil
 	}
 
 	args.Results = append(args.Results, fightArgs.Results...)
