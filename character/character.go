@@ -7,6 +7,7 @@ import (
 	"github.com/ahornerr/artifacts/game"
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
+	"log"
 	"math"
 	"time"
 )
@@ -69,7 +70,7 @@ func NewCharacter(c *client.ClientWithResponses, bank *bank.Bank, updates chan<-
 
 func (c *Character) PushState(stateFmt string, args ...interface{}) {
 	state := fmt.Sprintf(stateFmt, args...)
-	//log.Printf("Pushing %q\n", state)
+	log.Printf("%s: %s\n", c.Name, state)
 	c.State = append(c.State, state)
 	c.updates <- c
 }

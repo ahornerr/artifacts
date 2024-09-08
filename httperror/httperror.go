@@ -70,5 +70,5 @@ func ErrIsBankInsufficientQuantity(err error) bool {
 		return false
 	}
 
-	return httpError.Message == "Missing item or insufficient quantity in your inventory."
+	return httpError.Message == "Missing item or insufficient quantity."
 }

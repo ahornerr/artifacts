@@ -78,76 +78,89 @@ func main() {
 
 	characterStates := map[string]state.Runner{
 		"curlyBoy1": state.Loop(
-			state.CollectItems("serpent_skin_legs_armor", 5, true, true, characters),
-			state.CollectItems("magic_wizard_hat", 5, true, true, characters),
-
-			state.MakeX("life_ring", 10, true, func(character *character.Character, args *state.MakeXArgs) bool {
-				return character.GetLevel("jewelrycrafting") >= 20
+			state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+				return false
 			}),
-
-			state.CollectItems("dreadful_amulet", 5, true, true, characters),
-			state.CollectItems("dreadful_ring", 10, true, true, characters),
-			state.CollectItems("skull_ring", 10, true, true, characters),
-
-			state.MakeX("greater_wooden_staff", 10, true, func(character *character.Character, args *state.MakeXArgs) bool {
-				return character.GetLevel("weaponcrafting") >= 20
+			state.MakeX("spruce_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return character.GetLevel("woodcutting") >= 20
 			}),
-
-			state.MakeX("battlestaff", 5, true, func(character *character.Character, args *state.MakeXArgs) bool {
-				return character.GetLevel("weaponcrafting") >= 25
+			state.MakeX("hardwood_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return false
 			}),
-
-			state.CollectItems("skull_wand", 5, true, true, characters),
-			state.CollectItems("dreadful_staff", 5, true, true, characters),
+			//state.MakeX("battlestaff", 5, true, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return character.GetLevel("weaponcrafting") >= 25
+			//}),
+			//
+			//state.CollectItems("skull_wand", 5, true, true, characters),
+			//state.CollectItems("dreadful_staff", 5, true, true, characters),
 		),
 		"curlyBoy2": state.Loop(
-			state.MakeX("feather", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
+			state.MakeX("spruce_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return character.GetLevel("woodcutting") >= 20
 			}),
-			state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 100
+			state.MakeX("hardwood_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return false
 			}),
-			state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
-			}),
+
+			//state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+			//	return false
+			//}),
+			//state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 100
+			//}),
+			//state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 50
+			//}),
 		),
 		"curlyBoy3": state.Loop(
+			//state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+			//	return false
+			//}),
+			//state.MakeX("hardwood_plank", 18, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return character.Bank()["birch_wood"] < 5
+			//}),
+			//state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 50
+			//}),
+			//state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 100
+			//}),
 			state.MakeX("hardwood_plank", 18, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return character.Bank()["birch_wood"] < 5
-			}),
-			state.MakeX("feather", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
-			}),
-			state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 100
-			}),
-			state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
+				return false
 			}),
 		),
 		"curlyBoy4": state.Loop(
-			state.MakeX("feather", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
+			//state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+			//	return false
+			//}),
+			//state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 50
+			//}),
+			//state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 100
+			//}),
+			state.MakeX("spruce_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return character.GetLevel("woodcutting") >= 20
 			}),
-			state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 100
-			}),
-			state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
+			state.MakeX("hardwood_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return false
 			}),
 		),
 		"curlyBoy5": state.Loop(
-			state.MakeX("hardwood_plank", 18, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return character.Bank()["birch_wood"] < 5
-			}),
-			state.MakeX("feather", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
-			}),
-			state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 100
-			}),
-			state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
-				return args.Made >= 50
+			//state.Task(func(c *character.Character, args *state.TaskArgs) bool {
+			//	return false
+			//}),
+			//state.MakeX("hardwood_plank", 18, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return character.Bank()["birch_wood"] < 5
+			//}),
+			//state.MakeX("blue_slimeball", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 100
+			//}),
+			//state.MakeX("wolf_bone", 10, false, func(character *character.Character, args *state.MakeXArgs) bool {
+			//	return args.Made >= 50
+			//}),
+			state.MakeX("hardwood_plank", 19, false, func(character *character.Character, args *state.MakeXArgs) bool {
+				return false
 			}),
 		),
 	}
