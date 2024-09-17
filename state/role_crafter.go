@@ -124,9 +124,10 @@ func doCraftingTraining(ctx context.Context, char *character.Character, crafterW
 
 			var totalCost int
 			for item, quantity := range lowestItem.Crafting.Items {
-				// Account for items in the bank
+				// Account for items in the bank and inventory
 				totalQuantity := quantity * quantityToMakeAtATime
 				remainingQuantity := totalQuantity - char.Bank()[item.Code]
+				remainingQuantity -= char.Inventory[item.Code]
 				if remainingQuantity <= 0 {
 					continue
 				}
@@ -139,6 +140,7 @@ func doCraftingTraining(ctx context.Context, char *character.Character, crafterW
 				// Account for items in the bank
 				totalQuantity := quantity * quantityToMakeAtATime
 				remainingQuantity := totalQuantity - char.Bank()[item.Code]
+				remainingQuantity -= char.Inventory[item.Code]
 				if remainingQuantity <= 0 {
 					continue
 				}
