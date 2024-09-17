@@ -148,7 +148,7 @@ func doCraftingTraining(ctx context.Context, char *character.Character, crafterW
 				itemCost := game.Cost(item.Code)
 
 				for remainingQuantity > 0 {
-					thisQuantity := min(remainingQuantity, avgHarvesterCost/itemCost)
+					thisQuantity := max(1, min(remainingQuantity, avgHarvesterCost/itemCost))
 					crafterWants <- game.ItemQuantity{
 						Item:     item,
 						Quantity: thisQuantity,
