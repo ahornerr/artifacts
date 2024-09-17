@@ -79,7 +79,7 @@ func fromMonsters(item *Item, monsters []*Monster) int {
 		cost := avgDropQuantity * expectedKills
 
 		// Some multiplier based on roughly how long it takes to kill the monster
-		cost *= float64(monster.Level)
+		cost *= float64(monster.Level) * 2
 
 		if int(cost) < lowestMonsterCost {
 			lowestMonsterCost = int(cost)
