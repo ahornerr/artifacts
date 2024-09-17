@@ -106,7 +106,7 @@ func CraftingLoop(ctx context.Context, char *character.Character, args *Crafting
 		err = WithdrawItems(ctx, char, toWithdraw)
 		if err != nil {
 			// Since we don't lock the bank, it's possible that another character took the items we needed
-			if httperror.ErrIsBankInsufficientQuantity(err) {
+			if httperror.ErrIsBankInsufficientQuantity(err) || httperror.ErrIsBankItemNotFound(err) {
 				return CraftingLoop, nil
 			}
 			return nil, err

@@ -13,6 +13,10 @@ func New(token string) (*client.ClientWithResponses, error) {
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = math.MaxInt32 // Effectively infinite retries
 	retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if resp != nil && resp.StatusCode == 598 {
+			return false, nil
+		}
+
 		shouldRetry, checkErr := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 		if shouldRetry || checkErr != nil {
 			return shouldRetry, err

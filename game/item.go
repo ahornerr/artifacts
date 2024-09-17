@@ -35,3 +35,8 @@ type Item struct {
 func (i *Item) String() string {
 	return i.Name
 }
+
+type ItemQuantity struct {
+	Item     *Item
+	Quantity int
+}

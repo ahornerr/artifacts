@@ -21,14 +21,14 @@ func init() {
 	if err := Items.load(ctx); err != nil {
 		log.Fatal("Loading items failed: ", err)
 	}
-	if err := Maps.load(ctx); err != nil {
-		log.Fatal("Loading maps failed: ", err)
-	}
 	if err := Monsters.load(ctx); err != nil {
 		log.Fatal("Loading monsters failed: ", err)
 	}
 	if err := Resources.load(ctx); err != nil {
 		log.Fatal("Loading resources failed: ", err)
+	}
+	if err := Maps.load(ctx); err != nil {
+		log.Fatal("Loading maps failed: ", err)
 	}
 	if err := Events.load(ctx); err != nil {
 		log.Fatal("Loading events failed: ", err)
@@ -39,6 +39,9 @@ func init() {
 			<-ticker.C
 			if err := Events.load(ctx); err != nil {
 				log.Fatal("Loading events failed: ", err)
+			}
+			if err := Maps.load(ctx); err != nil {
+				log.Fatal("Loading maps failed: ", err)
 			}
 		}
 	}()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
+	"slices"
 )
 
 type items struct {
@@ -30,6 +31,27 @@ func (i *items) GetAll() map[string]*Item {
 
 func (i *items) Get(itemCode string) *Item {
 	return i.items[itemCode]
+}
+
+func (i *items) ForSkill(skill string, charLevel int) []*Item {
+	var items []*Item
+	for _, item := range i.items {
+		if item.Crafting == nil {
+			continue
+		}
+		if item.Crafting.Skill != skill {
+			continue
+		}
+		// More than 10 levels above we stop receiving XP
+		if item.Crafting.Level > charLevel || item.Crafting.Level+10 < charLevel {
+			continue
+		}
+		items = append(items, item)
+	}
+	slices.SortFunc(items, func(a, b *Item) int {
+		return a.Crafting.Level - b.Crafting.Level
+	})
+	return items
 }
 
 //func (i *items) BestAttack(element string) []*Item {

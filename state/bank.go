@@ -6,9 +6,9 @@ import (
 	"github.com/ahornerr/artifacts/game"
 )
 
-func Deposit(ctx context.Context, char *character.Character, items map[*game.Item]int) error {
-	for item, quantity := range items {
-		_, err := char.DepositBank(ctx, item.Code, quantity)
+func Deposit(ctx context.Context, char *character.Character, items map[string]int) error {
+	for itemCode, quantity := range items {
+		_, err := char.DepositBank(ctx, itemCode, quantity)
 		if err != nil {
 			return err
 		}
@@ -17,18 +17,11 @@ func Deposit(ctx context.Context, char *character.Character, items map[*game.Ite
 }
 
 func DepositAll(ctx context.Context, char *character.Character) error {
-	return char.DepositAll(ctx)
-}
-
-func MoveToBank(ctx context.Context, char *character.Character) error {
-	return char.MoveClosest(ctx, game.Maps.GetBanks())
+	return Deposit(ctx, char, char.Inventory)
 }
 
 func MoveToBankAndDepositAll(ctx context.Context, char *character.Character) error {
-	char.PushState("Moving to bank to deposit all")
-	defer char.PopState()
-
-	err := MoveToBank(ctx, char)
+	err := MoveToClosest(ctx, char, game.Maps.GetBanks())
 	if err != nil {
 		return err
 	}

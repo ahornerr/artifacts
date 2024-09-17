@@ -24,13 +24,19 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 function App() {
   const [data, setData] = useState({Characters: {}, Bank: []})
+  const [eventSource, setEventSource] = useState(null);
 
-  useEffect(() => {
+  const connectEventSource = () => {
+    console.log("Connecting event source")
+
     const es = new EventSource("/events")
 
     es.onopen = () => console.log("SSE connection opened")
 
-    es.onerror = (e) => console.log("SSE error", e)
+    es.onerror = (e) => {
+      console.log("SSE error", e)
+      setTimeout(connectEventSource, 5000)
+    }
 
     es.onmessage = (e) => {
       if (e.data) {
@@ -51,8 +57,19 @@ function App() {
       }
     }
 
-    return () => es.close();
-  }, []);
+    setEventSource(es)
+  }
+
+  useEffect(connectEventSource, []);
+
+  useEffect(() => {
+    return () => {
+      if (!!eventSource) {
+        console.log("Closing event source")
+        eventSource.close()
+      }
+    }
+  }, [eventSource])
 
   const sortedCharNames = Object.keys(data.Characters).sort((a, b) => a.localeCompare(b))
 
@@ -114,13 +131,12 @@ function LinearProgressWithLabel(props) {
   );
 }
 
-function buildStateString(state) {
-  if (!state) {
-    return ""
-  }
-  return state.map((state, i) => {
-    return "  ".repeat(i) + state
-  }).join("\n")
+function stateSubheader(state) {
+  return <>
+  {(state || []).map((state, i) => {
+    return <Typography key={i} variant="body2" display="block" ml={i}>{state}</Typography>
+  })}
+  </>
 }
 
 function Character({char}) {
@@ -149,8 +165,9 @@ function Character({char}) {
     <CardHeader
       avatar={<Avatar src={`https://artifactsmmo.com/images/characters/${char.Skin}.png`}/>}
       title={char.Name}
-      subheader={buildStateString(char.State)}
+      subheader={stateSubheader(char.State)}
       subheaderTypographyProps={{whiteSpace: "pre-wrap"}}
+      sx={{minHeight:60}}
     />
     <CardContent sx={{p: {xs: 1, sm: 2, xl: 2}}}>
       {char.Task &&

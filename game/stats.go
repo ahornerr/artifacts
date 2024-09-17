@@ -3,6 +3,7 @@ package game
 import (
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 	"log"
+	"math"
 	"strings"
 )
 
@@ -93,54 +94,58 @@ func AccumulatedStatsItemCodes(itemCodes map[string]string) *Stats {
 	return AccumulatedStats(items)
 }
 
-func (s Stats) GetDamageAgainst(other *Stats) float64 {
-	totalDamage := 0.0
+func roundToInt(x float64) int {
+	return int(math.Round(x))
+}
+
+func (s Stats) GetDamageAgainst(other *Stats) int {
+	totalDamage := 0
 
 	if other.IsResource {
 		if s.AttackWoodcutting > 0 && other.ResistWoodcutting < 0 {
-			totalDamage += float64(s.AttackWoodcutting) *
+			totalDamage += roundToInt(float64(s.AttackWoodcutting) *
 				(1 - float64(other.ResistWoodcutting)/100.0) *
-				(1 - float64(other.ResistWoodcutting)/1000.0)
+				(1 - float64(other.ResistWoodcutting)/1000.0))
 		}
 
 		if s.AttackMining > 0 && other.ResistMining < 0 {
-			totalDamage += float64(s.AttackMining) *
+			totalDamage += roundToInt(float64(s.AttackMining) *
 				(1 - float64(other.ResistMining)/100.0) *
-				(1 - float64(other.ResistMining)/1000.0)
+				(1 - float64(other.ResistMining)/1000.0))
 		}
 
 		if s.AttackFishing > 0 && other.ResistFishing < 0 {
-			totalDamage += float64(s.AttackFishing) *
+			totalDamage += roundToInt(float64(s.AttackFishing) *
 				(1 - float64(other.ResistFishing)/100.0) *
-				(1 - float64(other.ResistFishing)/1000.0)
+				(1 - float64(other.ResistFishing)/1000.0))
 		}
 	} else {
 		if s.AttackAir > 0 {
-			totalDamage += float64(s.AttackAir) *
+			totalDamage += roundToInt(float64(s.AttackAir) *
 				(1 + float64(s.DamageAir)/100.0) *
 				(1 - float64(other.ResistAir)/100.0) *
-				(1 - float64(other.ResistAir)/1000.0)
+				(1 - float64(other.ResistAir)/1000.0))
 		}
 
 		if s.AttackFire > 0 {
-			totalDamage += float64(s.AttackFire) *
+			totalDamage += roundToInt(float64(s.AttackFire) *
 				(1 + float64(s.DamageFire)/100.0) *
 				(1 - float64(other.ResistFire)/100.0) *
-				(1 - float64(other.ResistFire)/1000.0)
+				(1 - float64(other.ResistFire)/1000.0))
 		}
 
 		if s.AttackWater > 0 {
-			totalDamage += float64(s.AttackWater) *
+			totalDamage += roundToInt(float64(s.AttackWater) *
 				(1 + float64(s.DamageWater)/100.0) *
 				(1 - float64(other.ResistWater)/100.0) *
-				(1 - float64(other.ResistWater)/1000.0)
+				(1 - float64(other.ResistWater)/1000.0))
 		}
 
 		if s.AttackEarth > 0 {
-			totalDamage += float64(s.AttackEarth) *
+			totalDamage += roundToInt(float64(s.AttackEarth) *
 				(1 + float64(s.DamageEarth)/100.0) *
 				(1 - float64(other.ResistEarth)/100.0) *
-				(1 - float64(other.ResistEarth)/1000.0)
+				(1 - float64(other.ResistEarth)/1000.0))
 		}
 	}
 

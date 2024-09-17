@@ -9,6 +9,7 @@ import (
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
 	"log"
 	"math"
+	"slices"
 	"time"
 )
 
@@ -83,7 +84,7 @@ func (c *Character) PopState() {
 	}
 }
 
-func (c *Character) update(char client.CharacterSchema, waitForCooldown bool) {
+func (c *Character) update(ctx context.Context, char client.CharacterSchema, waitForCooldown bool) {
 	cooldown := char.CooldownExpiration
 	if cooldown == nil {
 		c.CooldownExpires = time.Time{}
@@ -163,7 +164,10 @@ func (c *Character) update(char client.CharacterSchema, waitForCooldown bool) {
 
 	// Wait for cooldown
 	if waitForCooldown {
-		time.Sleep(time.Until(c.CooldownExpires))
+		select {
+		case <-ctx.Done():
+		case <-time.After(time.Until(c.CooldownExpires)):
+		}
 	}
 }
 
@@ -224,7 +228,7 @@ func (c *Character) Get(ctx context.Context) (*client.CharacterResponseSchema, e
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data, false)
+	c.update(ctx, resp.JSON200.Data, false)
 
 	return resp.JSON200, nil
 }
@@ -246,7 +250,7 @@ func (c *Character) Move(ctx context.Context, x, y int) error {
 		return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return nil
 }
@@ -264,23 +268,12 @@ func (c *Character) Fight(ctx context.Context) (*client.FightSchema, error) {
 	c.PushState(result.Logs[len(result.Logs)-1])
 	defer c.PopState()
 
-	//if result.Result == client.Win {
-	//	c.PushState("Fight won (enemy HP %d)", result.Result)
-	//	defer c.PopState()
-	//} else if result.Result == client.Lose {
-	//	c.PushState("Fight lost")
-	//	defer c.PopState()
-	//}
-
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return result, nil
 }
 
 func (c *Character) Gather(ctx context.Context) (*client.SkillInfoSchema, error) {
-	c.PushState("Gathering")
-	defer c.PopState()
-
 	resp, err := c.client.ActionGatheringMyNameActionGatheringPostWithResponse(ctx, c.Name)
 	if err != nil {
 		return nil, err
@@ -288,7 +281,7 @@ func (c *Character) Gather(ctx context.Context) (*client.SkillInfoSchema, error)
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Details, nil
 }
@@ -307,7 +300,7 @@ func (c *Character) Craft(ctx context.Context, code string, quantity int) (*clie
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Details, nil
 }
@@ -327,7 +320,7 @@ func (c *Character) DepositBank(ctx context.Context, code string, quantity int) 
 	}
 
 	c.bank.Update(resp.JSON200.Data.Bank)
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return resp.JSON200.Data.Bank, nil
 }
@@ -347,7 +340,7 @@ func (c *Character) WithdrawBank(ctx context.Context, code string, quantity int)
 	}
 
 	c.bank.Update(resp.JSON200.Data.Bank)
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return resp.JSON200.Data.Bank, nil
 }
@@ -380,16 +373,6 @@ func (c *Character) ClosestOf(locations []game.Location) (game.Location, float64
 	return closestLocation, closestDistance
 }
 
-func (c *Character) DepositAll(ctx context.Context) error {
-	for itemCode, quantity := range c.Inventory {
-		_, err := c.DepositBank(ctx, itemCode, quantity)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (c *Character) NewTask(ctx context.Context) (*client.TaskSchema, error) {
 	c.PushState("Getting new task")
 	defer c.PopState()
@@ -401,7 +384,7 @@ func (c *Character) NewTask(ctx context.Context) (*client.TaskSchema, error) {
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Task, nil
 }
@@ -417,7 +400,7 @@ func (c *Character) CompleteTask(ctx context.Context) (*client.TaskRewardSchema,
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Reward, nil
 }
@@ -435,7 +418,7 @@ func (c *Character) Unequip(ctx context.Context, slot client.UnequipSchemaSlot) 
 		return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return nil
 }
@@ -454,7 +437,7 @@ func (c *Character) Equip(ctx context.Context, slot client.EquipSchemaSlot, item
 		return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return nil
 }
@@ -474,7 +457,7 @@ func (c *Character) Recycle(ctx context.Context, itemCode string, quantity int) 
 		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
 	}
 
-	c.update(resp.JSON200.Data.Character, true)
+	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Details, nil
 }
@@ -492,8 +475,8 @@ var equipmentTypes = map[string]bool{
 
 type EquipmentSet struct {
 	Equipment          map[string]*game.Item
-	TurnsToKillMonster float64
-	TurnsToKillPlayer  float64
+	TurnsToKillMonster int
+	TurnsToKillPlayer  int
 	Haste              int8
 }
 
@@ -581,7 +564,7 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 		}
 	}
 
-	basePlayerHp := 120 + 5*c.GetLevel("combat")
+	basePlayerHp := 115 + 5*c.GetLevel("combat")
 
 	set := NewEquipmentSet(nil)
 	for slot, itemCode := range c.Equipment {
@@ -605,6 +588,15 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 				newItems = append(newItems, item)
 			}
 		}
+		slices.SortFunc(newItems, func(a, b *game.Item) int {
+			if a.Code < b.Code {
+				return -1
+			}
+			if a.Code > b.Code {
+				return 1
+			}
+			return 0
+		})
 		slotsEquipment[slot] = newItems
 	}
 
@@ -631,7 +623,7 @@ func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet
 	return set
 }
 
-func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePlayerHp int, slotsEquipment map[string][]*game.Item, slots []string) (float64, float64, int8) {
+func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePlayerHp int, slotsEquipment map[string][]*game.Item, slots []string) (int, int, int8) {
 	fewestTurnsToKill, mostTurnsToDie, bestHaste := calculateTurns(set, targetStats, basePlayerHp)
 
 	// Pick a slot. Pick an item. Put an item in the slot. Calculate all other slots
@@ -646,11 +638,31 @@ func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePla
 
 		for _, item := range items {
 			set.Equipment[slot] = item
-			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, targetStats, basePlayerHp, slotsEquipment, newSlots)
+
+			otherSlotsEquipment := slotsEquipment
+			if slot == "weapon" {
+				// Filter out other slots that don't contribute to this weapon's attack bonuses
+				otherSlotsEquipment = map[string][]*game.Item{}
+				for otherSlot, otherItems := range slotsEquipment {
+					if otherSlot == "weapon" {
+						continue
+					}
+					for _, otherItem := range otherItems {
+						if (item.Stats.AttackAir > 0 && (otherItem.Stats.AttackAir > 0 || otherItem.Stats.DamageAir > 0)) ||
+							(item.Stats.AttackEarth > 0 && (otherItem.Stats.AttackEarth > 0 || otherItem.Stats.DamageEarth > 0)) ||
+							(item.Stats.AttackFire > 0 && (otherItem.Stats.AttackFire > 0 || otherItem.Stats.DamageFire > 0)) ||
+							(item.Stats.AttackWater > 0 && (otherItem.Stats.AttackWater > 0 || otherItem.Stats.DamageWater > 0)) {
+							otherSlotsEquipment[otherSlot] = append(otherSlotsEquipment[otherSlot], otherItem)
+						}
+					}
+				}
+			}
+
+			turnsToKill, turnsToDie, haste := computeBestForRestOfSet(set, targetStats, basePlayerHp, otherSlotsEquipment, newSlots)
 
 			if bestItem == nil ||
-				(turnsToKill+0.0001 < fewestTurnsToKill) ||
-				(turnsToKill == fewestTurnsToKill && turnsToDie-0.0001 > mostTurnsToDie) ||
+				(turnsToKill < fewestTurnsToKill) ||
+				(turnsToKill == fewestTurnsToKill && turnsToDie > mostTurnsToDie) ||
 				(turnsToKill == fewestTurnsToKill && turnsToDie == mostTurnsToDie && haste > bestHaste) {
 
 				fewestTurnsToKill = turnsToKill
@@ -666,23 +678,22 @@ func computeBestForRestOfSet(set *EquipmentSet, targetStats *game.Stats, basePla
 	return fewestTurnsToKill, mostTurnsToDie, bestHaste
 }
 
-func calculateTurns(set *EquipmentSet, targetStats *game.Stats, basePlayerHp int) (float64, float64, int8) {
+func calculateTurns(set *EquipmentSet, targetStats *game.Stats, basePlayerHp int) (int, int, int8) {
 	equipmentStats := game.AccumulatedStats(set.Equipment)
 
-	// TODO: For realistic attacks we should floor the values, but for purposes of gear selection we can keep them as floats
 	playerAttack := equipmentStats.GetDamageAgainst(targetStats)
 	monsterAttack := targetStats.GetDamageAgainst(equipmentStats)
 
 	playerHp := int(equipmentStats.Hp) + basePlayerHp
 
-	turnsToKillMonster := math.MaxFloat32
+	turnsToKillMonster := math.MaxUint8
 	if playerAttack > 0 {
-		turnsToKillMonster = float64(targetStats.Hp) / playerAttack
+		turnsToKillMonster = int(targetStats.Hp) / playerAttack
 	}
 
-	turnsToKillPlayer := math.MaxFloat32
+	turnsToKillPlayer := math.MaxUint8
 	if monsterAttack > 0 {
-		turnsToKillPlayer = float64(playerHp) / monsterAttack
+		turnsToKillPlayer = playerHp / monsterAttack
 	}
 
 	return turnsToKillMonster, turnsToKillPlayer, equipmentStats.Haste

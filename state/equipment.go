@@ -62,6 +62,10 @@ func EquipBestEquipment(ctx context.Context, char *character.Character, targetSt
 		err := Withdraw(ctx, char, item.Code, 1)
 		if err != nil {
 			if httperror.ErrIsBankItemNotFound(err) {
+				err = MoveToBankAndDepositAll(ctx, char)
+				if err != nil {
+					return err
+				}
 				return EquipBestEquipment(ctx, char, targetStats)
 			}
 			return err
@@ -78,6 +82,10 @@ func EquipBestEquipment(ctx context.Context, char *character.Character, targetSt
 			err := Withdraw(ctx, char, item.Code, 1)
 			if err != nil {
 				if httperror.ErrIsBankItemNotFound(err) {
+					err = MoveToBankAndDepositAll(ctx, char)
+					if err != nil {
+						return err
+					}
 					return EquipBestEquipment(ctx, char, targetStats)
 				}
 				return err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
+	"github.com/ahornerr/artifacts/httperror"
 	"log"
 	"math"
 	"strings"
@@ -21,17 +22,21 @@ type HarvestArgs struct {
 
 func Harvest(resourceCode string, stop func(*character.Character, *HarvestArgs) bool) Runner {
 	return func(ctx context.Context, char *character.Character) error {
-		return Run(ctx, char, HarvestLoop, &HarvestArgs{
-			Resource: game.Resources.Get(resourceCode),
-			Drops:    map[string]int{},
-			stop:     stop,
-		})
+		return Run(ctx, char, HarvestLoop, NewHarvestArgs(resourceCode, stop))
+	}
+}
+
+func NewHarvestArgs(resourceCode string, stop func(*character.Character, *HarvestArgs) bool) *HarvestArgs {
+	return &HarvestArgs{
+		Resource: game.Resources.Get(resourceCode),
+		Drops:    map[string]int{},
+		stop:     stop,
 	}
 }
 
 func HarvestLoop(ctx context.Context, char *character.Character, args *HarvestArgs) (State[*HarvestArgs], error) {
 	// Repeat until stop condition
-	if args.stop(char, args) {
+	if args.stop != nil && args.stop(char, args) {
 		return nil, nil
 	}
 
@@ -40,13 +45,25 @@ func HarvestLoop(ctx context.Context, char *character.Character, args *HarvestAr
 		return nil, nil
 	}
 
-	var drops []string
-	for itemCode, count := range args.Drops {
-		drops = append(drops, fmt.Sprintf("%d %s", count, game.Items.Get(itemCode).Name))
+	locations := game.Maps.GetResources(args.Resource.Code)
+	if len(locations) == 0 {
+		log.Println("No locations found for resource", args.Resource.Name)
+		return nil, nil
 	}
 
-	char.PushState("Harvesting %s (got %s)", args.Resource.Name, strings.Join(drops, ", "))
+	char.PushState("Harvesting %s", args.Resource.Name)
 	defer char.PopState()
+
+	if len(args.Drops) > 0 || args.Xp > 0 {
+		drops := []string{
+			fmt.Sprintf("%d XP", args.Xp),
+		}
+		for itemCode, count := range args.Drops {
+			drops = append(drops, fmt.Sprintf("%d %s", count, game.Items.Get(itemCode).Name))
+		}
+		char.PushState("Got %s", strings.Join(drops, ", "))
+		defer char.PopState()
+	}
 
 	// Bank if full
 	if char.IsInventoryFull() {
@@ -77,13 +94,16 @@ func HarvestLoop(ctx context.Context, char *character.Character, args *HarvestAr
 	}
 
 	// Move to the closest resource
-	err = MoveToClosest(ctx, char, game.Maps.GetResources(args.Resource.Code))
+	err = MoveToClosest(ctx, char, locations)
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := char.Gather(ctx)
 	if err != nil {
+		if httperror.ErrIsNotFoundOnMap(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

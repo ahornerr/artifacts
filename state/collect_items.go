@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ahornerr/artifacts/character"
 	"github.com/ahornerr/artifacts/game"
+	"log"
 )
 
 type CollectItemsArgs struct {
@@ -74,7 +75,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 	if len(resources) > 0 {
 		if len(resources) > 1 {
 			// TODO: If this is possible, figure out which one is easier to get
-			fmt.Println("Found multiple resources for item", item.Code)
+			log.Println("Found multiple resources for item", item.Code)
 		}
 		resource := resources[0]
 		rate := resource.Loot[item].Rate
@@ -100,7 +101,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 	if len(monsters) > 0 {
 		if len(monsters) > 1 {
 			// TODO: If this is possible, figure out which one is easier to get
-			fmt.Println("Found multiple monsters for item", item.Code)
+			log.Println("Found multiple monsters for item", item.Code)
 		}
 		monster := monsters[0]
 		rate := monster.Loot[item].Rate
@@ -114,7 +115,7 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 				have += char.Bank()[item.Code]
 			}
 			return have >= quantity
-		})
+		}, nil)
 		err := Run(ctx, char, FightLoop, fightArgs)
 		if err != nil {
 			return nil, err

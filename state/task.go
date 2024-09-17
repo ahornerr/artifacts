@@ -13,36 +13,12 @@ type TaskArgs struct {
 	Rewards map[string]int
 	Task    *client.TaskSchema
 
-	Drops   map[string]int
-	Gold    int
-	Xp      int
-	Results []client.FightSchemaResult
+	//Drops   map[string]int
+	//Gold    int
+	//Xp      int
+	//Results []client.FightSchemaResult
 
 	stop func(*character.Character, *TaskArgs) bool
-}
-
-func (t *TaskArgs) NumFights() int {
-	return len(t.Results)
-}
-
-func (t *TaskArgs) NumWins() int {
-	num := 0
-	for _, r := range t.Results {
-		if r == client.Win {
-			num++
-		}
-	}
-	return num
-}
-
-func (t *TaskArgs) NumLosses() int {
-	num := 0
-	for _, r := range t.Results {
-		if r == client.Lose {
-			num++
-		}
-	}
-	return num
 }
 
 func Task(stop func(*character.Character, *TaskArgs) bool) Runner {
@@ -54,21 +30,14 @@ func Task(stop func(*character.Character, *TaskArgs) bool) Runner {
 func NewTaskArgs(stop func(*character.Character, *TaskArgs) bool) *TaskArgs {
 	return &TaskArgs{
 		Rewards: make(map[string]int),
-		Drops:   make(map[string]int),
-		stop:    stop,
+		//Drops:   make(map[string]int),
+		stop: stop,
 	}
 }
 
 func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (State[*TaskArgs], error) {
-	// Repeat until stop condition
-	if args.stop != nil && args.stop(char, args) {
-		return nil, nil
-	}
-
-	char.PushState("Doing task")
-	defer char.PopState()
-
-	// Complete task
+	// Complete task if possible
+	// TODO: Support other task types
 	if char.Task != "" && char.TaskProgress == char.TaskTotal {
 		err := MoveToClosest(ctx, char, game.Maps.GetTaskMasters("monsters"))
 		if err != nil {
@@ -82,6 +51,14 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 
 		args.Rewards[reward.Code] += reward.Quantity
 	}
+
+	// Repeat until stop condition
+	if args.stop != nil && args.stop(char, args) {
+		return nil, nil
+	}
+
+	char.PushState("Doing task")
+	defer char.PopState()
 
 	// Get new task
 	if char.Task == "" {
@@ -97,24 +74,25 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 	}
 
 	// Bank if full, get better equipment, move to monster, fight once
-	fightArgs := NewFightArgs(char.Task, func(c *character.Character, args *FightArgs) bool {
-		return args.NumFights() > 0
-	})
+	fightArgs := NewFightArgs(char.Task, func(c *character.Character, _ *FightArgs) bool {
+		return args.stop != nil && args.stop(char, args) || c.TaskProgress >= c.TaskTotal
+	}, nil)
 	err := Run(ctx, char, FightLoop, fightArgs)
 	if err != nil {
 		return nil, err
 	}
+
 	if fightArgs.NumFights() == 0 {
 		// Didn't attempt to fight, must be unwinnable
 		return nil, nil
 	}
 
-	args.Results = append(args.Results, fightArgs.Results...)
-	args.Xp += fightArgs.Xp
-	args.Gold += fightArgs.Gold
-	for itemCode, quantity := range fightArgs.Drops {
-		args.Drops[itemCode] += quantity
-	}
+	//args.Results = append(args.Results, fightArgs.Results...)
+	//args.Xp += fightArgs.Xp
+	//args.Gold += fightArgs.Gold
+	//for itemCode, quantity := range fightArgs.Drops {
+	//	args.Drops[itemCode] += quantity
+	//}
 
 	return TaskLoop, nil
 }

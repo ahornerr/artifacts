@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ahornerr/artifacts/httperror"
 	"github.com/promiseofcake/artifactsmmo-go-client/client"
+	"slices"
 )
 
 type resources struct {
@@ -26,6 +27,24 @@ func (r *resources) Get(resourceCode string) *Resource {
 
 func (r *resources) ResourcesForItem(item *Item) []*Resource {
 	return r.drops[item]
+}
+
+func (r *resources) ResourcesForSkill(skill string, charLevel int) []*Resource {
+	var resources []*Resource
+	for _, resource := range r.resources {
+		if resource.Skill != skill {
+			continue
+		}
+		// More than 10 levels above we stop receiving XP
+		if resource.Level > charLevel || resource.Level+10 < charLevel {
+			continue
+		}
+		resources = append(resources, resource)
+	}
+	slices.SortFunc(resources, func(a, b *Resource) int {
+		return a.Level - b.Level
+	})
+	return resources
 }
 
 func (r *resources) load(ctx context.Context) error {

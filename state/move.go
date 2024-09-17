@@ -7,6 +7,10 @@ import (
 )
 
 func Move(ctx context.Context, char *character.Character, location game.Location) error {
+	if char.Location.X == location.X && char.Location.Y == location.Y {
+		return nil
+	}
+
 	char.PushState("Moving to %s", location.Name)
 	defer char.PopState()
 	return char.Move(ctx, location.X, location.Y)

@@ -72,3 +72,11 @@ func ErrIsBankInsufficientQuantity(err error) bool {
 
 	return httpError.Message == "Missing item or insufficient quantity."
 }
+
+func ErrIsNotFoundOnMap(err error) bool {
+	var httpError HTTPError
+	if !errors.As(err, &httpError) {
+		return false
+	}
+	return httpError.Code == 598
+}
