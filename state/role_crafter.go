@@ -122,11 +122,28 @@ func doCraftingTraining(ctx context.Context, char *character.Character, crafterW
 			quantityToMakeAtATime := 5
 			numHarvesters := 4 // TODO: Make this configurable?
 
-			avgHarvesterCost := (lowestCost * quantityToMakeAtATime) / numHarvesters
+			var totalCost int
+			for item, quantity := range lowestItem.Crafting.Items {
+				// Account for items in the bank
+				totalQuantity := quantity * quantityToMakeAtATime
+				remainingQuantity := totalQuantity - char.Bank()[item.Code]
+				if remainingQuantity <= 0 {
+					continue
+				}
+				totalCost += game.Cost(item.Code) * remainingQuantity
+			}
+
+			avgHarvesterCost := totalCost / numHarvesters
 
 			for item, quantity := range lowestItem.Crafting.Items {
+				// Account for items in the bank
+				totalQuantity := quantity * quantityToMakeAtATime
+				remainingQuantity := totalQuantity - char.Bank()[item.Code]
+				if remainingQuantity <= 0 {
+					continue
+				}
+
 				itemCost := game.Cost(item.Code)
-				remainingQuantity := quantity * quantityToMakeAtATime
 
 				for remainingQuantity > 0 {
 					thisQuantity := min(remainingQuantity, avgHarvesterCost/itemCost)
