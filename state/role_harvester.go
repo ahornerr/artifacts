@@ -90,7 +90,7 @@ func harvestForCrafter(ctx context.Context, char *character.Character, crafterWa
 	err := CollectItems(
 		crafterWants.Item.Code,
 		crafterWants.Quantity,
-		true,
+		false,
 		false,
 		nil,
 	)(ctx, char)
