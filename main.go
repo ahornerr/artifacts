@@ -144,7 +144,7 @@ func main() {
 			char := *characters[charName]
 			events <- Event{Character: &char}
 		}
-		events <- Event{Bank: theBank.Items}
+		events <- Event{Bank: theBank.Items()}
 	}
 
 	server := httpServer(events, onNewClient)

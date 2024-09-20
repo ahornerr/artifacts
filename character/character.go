@@ -182,7 +182,7 @@ func (c *Character) MaxInventoryItems() int {
 }
 
 func (c *Character) Bank() map[string]int {
-	return c.bank.Items
+	return c.bank.Items()
 }
 
 func (c *Character) InventoryCount() int {
@@ -563,7 +563,7 @@ func (c *Character) GetEquipmentUpgrades() ([]*game.Item, []*game.Item) {
 
 func (c *Character) GetBestOwnedEquipment(targetStats *game.Stats) *EquipmentSet {
 	invBankAndEquipment := map[*game.Item]bool{}
-	for itemCode := range c.bank.Items {
+	for itemCode := range c.Bank() {
 		invBankAndEquipment[game.Items.Get(itemCode)] = true
 	}
 	for itemCode := range c.Inventory {

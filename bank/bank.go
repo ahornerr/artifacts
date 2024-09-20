@@ -8,16 +8,23 @@ import (
 )
 
 type Bank struct {
-	Items map[string]int
+	items map[string]int
 
 	client  *client.ClientWithResponses
 	mux     sync.Mutex
 	updates chan<- map[string]int
 }
 
+func (b *Bank) Items() map[string]int {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	return b.items
+}
+
 func NewBank(c *client.ClientWithResponses, updates chan<- map[string]int) *Bank {
 	return &Bank{
-		Items:   map[string]int{},
+		items:   map[string]int{},
 		client:  c,
 		updates: updates,
 	}
@@ -58,10 +65,10 @@ func (b *Bank) Update(newItems []client.SimpleItemSchema) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
-	b.Items = map[string]int{}
+	b.items = map[string]int{}
 	for _, bankItem := range newItems {
-		b.Items[bankItem.Code] += bankItem.Quantity
+		b.items[bankItem.Code] += bankItem.Quantity
 	}
 
-	b.updates <- b.Items
+	b.updates <- b.items
 }

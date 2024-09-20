@@ -13,7 +13,6 @@ import (
 
 var (
 	levelMilestones = []int{5, 10, 15, 20, 25, 30, 35}
-	craftingSkills  = []string{"weaponcrafting", "gearcrafting", "jewelrycrafting"}
 )
 
 func itemsForTraining(char *character.Character, skill string) []*game.Item {
@@ -51,21 +50,21 @@ func crafter(ctx context.Context, char *character.Character, characters map[stri
 		return nil
 	}
 
-	did, err = doCraftBetterItems(ctx, char, characters, crafterWants)
-	if err != nil {
-		return err
-	} else if did {
+	betterEquipment := getBetterEquipmentForCrafting(char.Bank(), characters)
+	if len(betterEquipment) == 0 {
+		// TODO: What to do here?
 		return nil
 	}
 
-	did, err = doCraftingTraining(ctx, char, crafterWants)
-	if err != nil {
-		return err
-	} else if did {
-		return nil
+	item := betterEquipment[0].Item
+	quantity := betterEquipment[0].Quantity
+
+	if char.GetLevel(item.Crafting.Skill) < item.Crafting.Level {
+		// We need to train this skill to be able to craft the item
+		return trainCrafting(ctx, char, crafterWants, item.Crafting.Skill)
 	}
 
-	return nil
+	return distributeAndMake(ctx, char, crafterWants, item, quantity, false)
 }
 
 func doMonsterEvent(ctx context.Context, char *character.Character) (bool, error) {
@@ -104,9 +103,9 @@ func doTask(ctx context.Context, char *character.Character) (bool, error) {
 	return false, nil
 }
 
-func doCraftBetterItems(ctx context.Context, char *character.Character, characters map[string]*character.Character, crafterWants chan game.ItemQuantity) (bool, error) {
+func getBetterEquipmentForCrafting(bank map[string]int, characters map[string]*character.Character) []game.ItemQuantity {
 	totalItemQuantity := func(itemCode string) int {
-		quantity := char.Bank()[itemCode]
+		quantity := bank[itemCode]
 		for _, c := range characters {
 			quantity += c.Inventory[itemCode]
 			for _, equipped := range c.Equipment {
@@ -118,7 +117,8 @@ func doCraftBetterItems(ctx context.Context, char *character.Character, characte
 		return quantity
 	}
 
-	//var itemsToMake []game.ItemQuantity
+	var itemCandidates []game.ItemQuantity
+
 	for _, level := range levelMilestones {
 		charactersNeedingThisLevelItem := 0
 
@@ -141,11 +141,6 @@ func doCraftBetterItems(ctx context.Context, char *character.Character, characte
 
 		items := game.Items.ForLevel(level)
 
-		// Sort items lowest cost first
-		slices.SortFunc(items, func(a, b *game.Item) int {
-			return game.Cost(a.Code) - game.Cost(b.Code)
-		})
-
 		for _, item := range items {
 			// TODO: Ignore tools for now
 			if item.SubType == "tool" {
@@ -153,6 +148,9 @@ func doCraftBetterItems(ctx context.Context, char *character.Character, characte
 			}
 			// TODO: Select only equippable items somehow
 			if item.Type == "resource" {
+				continue
+			}
+			if item.Type == "consumable" {
 				continue
 			}
 
@@ -166,55 +164,52 @@ func doCraftBetterItems(ctx context.Context, char *character.Character, characte
 				continue
 			}
 
-			return true, distributeAndMake(ctx, char, crafterWants, item, remainingQuantity, false)
+			itemCandidates = append(itemCandidates, game.ItemQuantity{
+				Item:     item,
+				Quantity: remainingQuantity,
+			})
 		}
-
 	}
 
-	// Make the first item in the list
-	return false, nil
+	// Sort items lowest cost first
+	slices.SortFunc(itemCandidates, func(a, b game.ItemQuantity) int {
+		return game.Cost(a.Item.Code)*a.Quantity - game.Cost(b.Item.Code)*b.Quantity
+	})
+
+	return itemCandidates
 }
 
-func doCraftingTraining(ctx context.Context, char *character.Character, crafterWants chan game.ItemQuantity) (bool, error) {
-	for _, level := range levelMilestones {
-		for _, skill := range craftingSkills {
-			if char.GetLevel(skill) >= level {
-				continue
-			}
-
-			// TODO: Take into account materials we have in inventory/bank
-			lowestCost := math.MaxInt32
-			var lowestItem *game.Item
-			for _, item := range itemsForTraining(char, skill) {
-				cost := game.Cost(item.Code)
-				if cost < lowestCost {
-					lowestCost = cost
-					lowestItem = item
-				}
-			}
-
-			if lowestItem == nil {
-				// This should never happen
-				return false, fmt.Errorf("unable to find item for training %s", skill)
-			}
-
-			quantityToMakeAtATime := 5
-
-			startXp := char.GetXP(skill)
-			err := distributeAndMake(ctx, char, crafterWants, lowestItem, quantityToMakeAtATime, true)
-			if err != nil {
-				return true, err
-			}
-
-			if startXp == char.GetXP(skill) {
-				return true, fmt.Errorf("not getting any %s XP from making %s", skill, lowestItem.Name)
-			}
-
-			return true, err
+func trainCrafting(ctx context.Context, char *character.Character, crafterWants chan game.ItemQuantity, skill string) error {
+	// TODO: Take into account materials we have in inventory/bank
+	lowestCost := math.MaxInt32
+	var lowestItem *game.Item
+	for _, item := range itemsForTraining(char, skill) {
+		cost := game.Cost(item.Code)
+		if cost < lowestCost {
+			lowestCost = cost
+			lowestItem = item
 		}
 	}
 
-	return false, nil
+	if lowestItem == nil {
+		// This should only happen once we reach max level
+		return fmt.Errorf("unable to find item for training %s", skill)
+	}
+
+	quantityToMakeAtATime := 5
+
+	startXp := char.GetXP(skill)
+	err := distributeAndMake(ctx, char, crafterWants, lowestItem, quantityToMakeAtATime, true)
+	if err != nil {
+		return err
+	}
+
+	if startXp == char.GetXP(skill) {
+		// This should never happen
+		return fmt.Errorf("not getting any %s XP from making %s", skill, lowestItem.Name)
+	}
+
+	return nil
 }
 
 func distributeAndMake(ctx context.Context, char *character.Character, crafterWants chan game.ItemQuantity, item *game.Item, quantity int, recycle bool) error {
