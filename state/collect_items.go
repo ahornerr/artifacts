@@ -141,10 +141,20 @@ func CollectItemsLoop(ctx context.Context, char *character.Character, args *Coll
 		}
 	}
 
-	// TODO
-	//if item.SubType == "task" {
-	//
-	//}
+	if item.SubType == "task" {
+		taskItemArgs := func(c *character.Character, _ *TaskItemArgs) bool {
+			have := c.Inventory[item.Code]
+			if args.includeBank {
+				have += c.Bank()[item.Code]
+			}
+			return have >= quantity
+		}
+		runner := TaskItem(item.Code, quantity, taskItemArgs)
+		err := runner(ctx, char)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return CollectItemsLoop, nil
 }

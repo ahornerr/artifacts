@@ -69,7 +69,7 @@ func canCollect(char *character.Character, item *game.Item) bool {
 	}
 
 	for _, resource := range game.Resources.ResourcesForItem(item) {
-		if char.GetLevel(resource.Skill) >= item.Crafting.Level {
+		if char.GetLevel(resource.Skill) >= resource.Level {
 			return true
 		}
 	}
@@ -77,6 +77,12 @@ func canCollect(char *character.Character, item *game.Item) bool {
 	for _, monster := range game.Monsters.MonstersForItem(item) {
 		// TODO: Determine if we can win against a monster
 		_ = monster
+		return true
+	}
+
+	// Just jasper crystal for now
+	if item.SubType == "task" {
+		// TODO: Let's just assume we can always collect this for now
 		return true
 	}
 

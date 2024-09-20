@@ -13,10 +13,7 @@ type TaskArgs struct {
 	Rewards map[string]int
 	Task    *client.TaskSchema
 
-	//Drops   map[string]int
-	//Gold    int
-	//Xp      int
-	//Results []client.FightSchemaResult
+	TasksCompleted int
 
 	stop func(*character.Character, *TaskArgs) bool
 }
@@ -50,6 +47,8 @@ func TaskLoop(ctx context.Context, char *character.Character, args *TaskArgs) (S
 		}
 
 		args.Rewards[reward.Code] += reward.Quantity
+
+		args.TasksCompleted++
 	}
 
 	// Repeat until stop condition

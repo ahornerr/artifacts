@@ -10,18 +10,12 @@ import (
 type items struct {
 	client *client.ClientWithResponses
 	items  map[string]*Item
-	//bestAttackItems map[string][]*Item
-	//bestResistItems map[string][]*Item
-	//bestDamageItems map[string][]*Item
 }
 
 func newItems(c *client.ClientWithResponses) *items {
 	return &items{
 		client: c,
 		items:  map[string]*Item{},
-		//bestAttackItems: map[string][]*Item{},
-		//bestResistItems: map[string][]*Item{},
-		//bestDamageItems: map[string][]*Item{},
 	}
 }
 
@@ -33,7 +27,7 @@ func (i *items) Get(itemCode string) *Item {
 	return i.items[itemCode]
 }
 
-func (i *items) ForSkill(skill string, charLevel int) []*Item {
+func (i *items) ForTrainingCraftingSkill(skill string, charLevel int) []*Item {
 	var items []*Item
 	for _, item := range i.items {
 		if item.Crafting == nil {
@@ -54,17 +48,20 @@ func (i *items) ForSkill(skill string, charLevel int) []*Item {
 	return items
 }
 
-//func (i *items) BestAttack(element string) []*Item {
-//	return i.bestAttackItems[element]
-//}
-//
-//func (i *items) BestResist(element string) []*Item {
-//	return i.bestResistItems[element]
-//}
-//
-//func (i *items) BestDamage(element string) []*Item {
-//	return i.bestDamageItems[element]
-//}
+// ForLevel returns items that are craftable and usable at the supplied combat level
+func (i *items) ForLevel(level int) []*Item {
+	var items []*Item
+	for _, item := range i.items {
+		if item.Crafting == nil {
+			continue
+		}
+		if item.Level != level {
+			continue
+		}
+		items = append(items, item)
+	}
+	return items
+}
 
 func (i *items) load(ctx context.Context) error {
 	page := 1
@@ -90,12 +87,11 @@ func (i *items) load(ctx context.Context) error {
 			}
 
 			i.items[itemSchema.Code] = &Item{
-				Code:    itemSchema.Code,
-				Name:    itemSchema.Name,
-				Type:    itemSchema.Type,
-				SubType: itemSchema.Subtype,
-				Level:   itemSchema.Level,
-				//DropsFrom: g.ResourcesForItem[itemSchema.Code], // TODO: Best way to populate this?
+				Code:     itemSchema.Code,
+				Name:     itemSchema.Name,
+				Type:     itemSchema.Type,
+				SubType:  itemSchema.Subtype,
+				Level:    itemSchema.Level,
 				Effects:  itemSchema.Effects,
 				Stats:    StatsFromItem(itemSchema),
 				Crafting: crafting,
@@ -124,54 +120,6 @@ func (i *items) load(ctx context.Context) error {
 
 		item.Crafting.Items = craftingItems
 	}
-
-	//for _, item := range i.items {
-	//	for element, attack := range item.Stats.Attack {
-	//		if attack == 0 {
-	//			continue
-	//		}
-	//		if i.bestAttackItems[element] == nil {
-	//			i.bestAttackItems[element] = []*Item{}
-	//		}
-	//		i.bestAttackItems[element] = append(i.bestAttackItems[element], item)
-	//	}
-	//	for element, resistance := range item.Stats.Resistance {
-	//		if resistance == 0 {
-	//			continue
-	//		}
-	//		if i.bestResistItems[element] == nil {
-	//			i.bestResistItems[element] = []*Item{}
-	//		}
-	//		i.bestResistItems[element] = append(i.bestResistItems[element], item)
-	//	}
-	//	for element, damage := range item.Stats.Damage {
-	//		if damage == 0 {
-	//			continue
-	//		}
-	//		if i.bestDamageItems[element] == nil {
-	//			i.bestDamageItems[element] = []*Item{}
-	//		}
-	//		i.bestDamageItems[element] = append(i.bestDamageItems[element], item)
-	//	}
-	//}
-	//
-	//for element := range i.bestAttackItems {
-	//	slices.SortFunc(i.bestAttackItems[element], func(a, b *Item) int {
-	//		return b.Stats.Attack[element] - a.Stats.Attack[element]
-	//	})
-	//}
-	//
-	//for element := range i.bestResistItems {
-	//	slices.SortFunc(i.bestResistItems[element], func(a, b *Item) int {
-	//		return b.Stats.Resistance[element] - a.Stats.Resistance[element]
-	//	})
-	//}
-	//
-	//for element := range i.bestDamageItems {
-	//	slices.SortFunc(i.bestDamageItems[element], func(a, b *Item) int {
-	//		return b.Stats.Damage[element] - a.Stats.Damage[element]
-	//	})
-	//}
 
 	return nil
 }

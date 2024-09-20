@@ -116,7 +116,7 @@ func main() {
 	crafterWants := make(chan game.ItemQuantity, 100)
 
 	characterStates := map[string]state.Runner{
-		"curlyBoy1": state.RoleCrafter(crafterWants),
+		"curlyBoy1": state.RoleCrafter(characters, crafterWants),
 		"curlyBoy2": state.RoleHarvester(crafterWants),
 		"curlyBoy3": state.RoleHarvester(crafterWants),
 		"curlyBoy4": state.RoleHarvester(crafterWants),

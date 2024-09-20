@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"slices"
+	"sync"
 	"time"
 )
 
@@ -52,6 +53,7 @@ type Character struct {
 	updates chan<- *Character
 
 	State []string
+	mux   sync.Mutex
 }
 
 func NewCharacter(c *client.ClientWithResponses, bank *bank.Bank, updates chan<- *Character, name string) *Character {
@@ -85,6 +87,8 @@ func (c *Character) PopState() {
 }
 
 func (c *Character) update(ctx context.Context, char client.CharacterSchema, waitForCooldown bool) {
+	c.mux.Lock()
+
 	cooldown := char.CooldownExpiration
 	if cooldown == nil {
 		c.CooldownExpires = time.Time{}
@@ -160,6 +164,8 @@ func (c *Character) update(ctx context.Context, char client.CharacterSchema, wai
 	c.TaskProgress = char.TaskProgress
 	c.TaskTotal = char.TaskTotal
 
+	c.mux.Unlock()
+
 	c.updates <- c
 
 	// Wait for cooldown
@@ -205,14 +211,23 @@ func (c *Character) IsAtOneOf(locations []game.Location) bool {
 }
 
 func (c *Character) GetLevel(skill string) int {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+
 	return c.Levels[skill]
 }
 
 func (c *Character) GetXP(skill string) int {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+
 	return c.Xp[skill]
 }
 
 func (c *Character) GetMaxXP(skill string) int {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+
 	return c.MaxXp[skill]
 }
 
@@ -403,6 +418,37 @@ func (c *Character) CompleteTask(ctx context.Context) (*client.TaskRewardSchema,
 	c.update(ctx, resp.JSON200.Data.Character, true)
 
 	return &resp.JSON200.Data.Reward, nil
+}
+
+func (c *Character) ExchangeTask(ctx context.Context) (*client.TaskRewardSchema, error) {
+	c.PushState("Exchanging task")
+	defer c.PopState()
+
+	resp, err := c.client.ActionTaskExchangeMyNameActionTaskExchangePostWithResponse(ctx, c.Name)
+	if err != nil {
+		return nil, err
+	} else if resp.JSON200 == nil {
+		return nil, httperror.NewHTTPError(resp.StatusCode(), resp.Body)
+	}
+
+	c.update(ctx, resp.JSON200.Data.Character, true)
+
+	return &resp.JSON200.Data.Reward, nil
+}
+func (c *Character) CancelTask(ctx context.Context) error {
+	c.PushState("Canceling task")
+	defer c.PopState()
+
+	resp, err := c.client.ActionTaskCancelMyNameActionTaskCancelPostWithResponse(ctx, c.Name)
+	if err != nil {
+		return err
+	} else if resp.JSON200 == nil {
+		return httperror.NewHTTPError(resp.StatusCode(), resp.Body)
+	}
+
+	c.update(ctx, resp.JSON200.Data.Character, true)
+
+	return nil
 }
 
 func (c *Character) Unequip(ctx context.Context, slot client.UnequipSchemaSlot) error {
